@@ -8,6 +8,7 @@ import (
 	"errors"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -15,9 +16,10 @@ import (
 )
 
 var (
-	ErrInvalidCredentials = errors.New("invalid credentials")
-	ErrUserAlreadyExists  = errors.New("user already exists")
-	ErrUnauthorized       = errors.New("unauthorized")
+	ErrInvalidCredentials     = errors.New("invalid credentials")
+	ErrUserAlreadyExists      = errors.New("user already exists")
+	ErrUnauthorized           = errors.New("unauthorized")
+	ErrCurrentPasswordInvalid = errors.New("current password is invalid")
 )
 
 type Repository struct {
@@ -26,6 +28,18 @@ type Repository struct {
 
 func NewRepository(db *pgxpool.Pool) *Repository {
 	return &Repository{db: db}
+}
+
+type sessionCreator interface {
+	Exec(ctx context.Context, sql string, arguments ...any) (pgconn.CommandTag, error)
+}
+
+type UpdateProfileInput struct {
+	UserID          string
+	DisplayName     string
+	Email           string
+	CurrentPassword *string
+	NewPassword     *string
 }
 
 func (r *Repository) Register(ctx context.Context, username, email, password, displayName string) (*User, string, error) {
@@ -42,18 +56,17 @@ func (r *Repository) Register(ctx context.Context, username, email, password, di
 		_ = tx.Rollback(ctx)
 	}()
 
-	var user User
+	var id uuid.UUID
 
 	err = tx.QueryRow(ctx, `
 		INSERT INTO users (username, email, password_hash, display_name)
 		VALUES ($1, $2, $3, $4)
-		RETURNING id, username, email, display_name, avatar_url
+		RETURNING id, username, email, display_name
 	`, username, email, string(passwordHash), displayName).Scan(
-		&user.ID,
-		&user.Username,
-		&user.Email,
-		&user.DisplayName,
-		&user.AvatarURL,
+		&id,
+		&username,
+		&email,
+		&displayName,
 	)
 	if err != nil {
 		if isUniqueViolation(err) {
@@ -63,7 +76,7 @@ func (r *Repository) Register(ctx context.Context, username, email, password, di
 		return nil, "", err
 	}
 
-	sessionToken, err := createSession(ctx, tx, user.ID.String())
+	sessionToken, err := createSession(ctx, tx, id.String())
 	if err != nil {
 		return nil, "", err
 	}
@@ -72,24 +85,29 @@ func (r *Repository) Register(ctx context.Context, username, email, password, di
 		return nil, "", err
 	}
 
+	user := NewUser(id, username, email, displayName)
+
 	return &user, sessionToken, nil
 }
 
 func (r *Repository) Login(ctx context.Context, email, password string) (*User, string, error) {
-	var user User
-	var passwordHash string
+	var (
+		id           uuid.UUID
+		username     string
+		displayName  string
+		passwordHash string
+	)
 
 	err := r.db.QueryRow(ctx, `
-		SELECT id, username, email, password_hash, display_name, avatar_url
+		SELECT id, username, email, password_hash, display_name
 		FROM users
 		WHERE email = $1
 	`, email).Scan(
-		&user.ID,
-		&user.Username,
-		&user.Email,
+		&id,
+		&username,
+		&email,
 		&passwordHash,
-		&user.DisplayName,
-		&user.AvatarURL,
+		&displayName,
 	)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, "", ErrInvalidCredentials
@@ -102,10 +120,12 @@ func (r *Repository) Login(ctx context.Context, email, password string) (*User, 
 		return nil, "", ErrInvalidCredentials
 	}
 
-	sessionToken, err := createSession(ctx, r.db, user.ID.String())
+	sessionToken, err := createSession(ctx, r.db, id.String())
 	if err != nil {
 		return nil, "", err
 	}
+
+	user := NewUser(id, username, email, displayName)
 
 	return &user, sessionToken, nil
 }
@@ -124,20 +144,24 @@ func (r *Repository) Logout(ctx context.Context, sessionToken string) error {
 func (r *Repository) CurrentUser(ctx context.Context, sessionToken string) (*User, error) {
 	tokenHash := hashToken(sessionToken)
 
-	var user User
+	var (
+		id          uuid.UUID
+		username    string
+		email       string
+		displayName string
+	)
 
 	err := r.db.QueryRow(ctx, `
-		SELECT u.id, u.username, u.email, u.display_name, u.avatar_url
+		SELECT u.id, u.username, u.email, u.display_name
 		FROM sessions s
 		JOIN users u ON u.id = s.user_id
 		WHERE s.token_hash = $1
 		  AND s.expires_at > now()
 	`, tokenHash).Scan(
-		&user.ID,
-		&user.Username,
-		&user.Email,
-		&user.DisplayName,
-		&user.AvatarURL,
+		&id,
+		&username,
+		&email,
+		&displayName,
 	)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, ErrUnauthorized
@@ -146,11 +170,84 @@ func (r *Repository) CurrentUser(ctx context.Context, sessionToken string) (*Use
 		return nil, err
 	}
 
+	user := NewUser(id, username, email, displayName)
+
 	return &user, nil
 }
 
-type sessionCreator interface {
-	Exec(ctx context.Context, sql string, arguments ...any) (pgconn.CommandTag, error)
+func (r *Repository) UpdateProfile(ctx context.Context, input UpdateProfileInput) (*User, error) {
+	tx, err := r.db.Begin(ctx)
+	if err != nil {
+		return nil, err
+	}
+	defer func() {
+		_ = tx.Rollback(ctx)
+	}()
+
+	if input.NewPassword != nil {
+		var passwordHash string
+		err := tx.QueryRow(ctx, `
+			SELECT password_hash
+			FROM users
+			WHERE id = $1
+		`, input.UserID).Scan(&passwordHash)
+		if err != nil {
+			return nil, err
+		}
+		if input.CurrentPassword == nil ||
+			bcrypt.CompareHashAndPassword([]byte(passwordHash), []byte(*input.CurrentPassword)) != nil {
+			return nil, ErrCurrentPasswordInvalid
+		}
+
+		newPasswordHash, err := bcrypt.GenerateFromPassword([]byte(*input.NewPassword), bcrypt.DefaultCost)
+		if err != nil {
+			return nil, err
+		}
+
+		_, err = tx.Exec(ctx, `
+			UPDATE users
+			SET password_hash = $1,
+			    updated_at = now()
+			WHERE id = $2
+		`, string(newPasswordHash), input.UserID)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	var (
+		id          uuid.UUID
+		username    string
+		email       string
+		displayName string
+	)
+	err = tx.QueryRow(ctx, `
+		UPDATE users
+		SET display_name = $1,
+		    email = $2,
+		    updated_at = now()
+		WHERE id = $3
+		RETURNING id, username, email, display_name
+	`, input.DisplayName, input.Email, input.UserID).Scan(
+		&id,
+		&username,
+		&email,
+		&displayName,
+	)
+	if err != nil {
+		if isUniqueViolation(err) {
+			return nil, ErrUserAlreadyExists
+		}
+		return nil, err
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		return nil, err
+	}
+
+	user := NewUser(id, username, email, displayName)
+
+	return &user, nil
 }
 
 func createSession(ctx context.Context, db sessionCreator, userID string) (string, error) {

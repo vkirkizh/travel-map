@@ -55,6 +55,13 @@ type createFlightRequest struct {
 	FlightNumber    *string `json:"flight_number"`
 }
 
+type updateMeRequest struct {
+	DisplayName     string  `json:"display_name"`
+	Email           string  `json:"email"`
+	CurrentPassword *string `json:"current_password"`
+	NewPassword     *string `json:"new_password"`
+}
+
 func New(db *pgxpool.Pool, cfg config.Config) http.Handler {
 	s := &Server{
 		db:                  db,
@@ -110,6 +117,7 @@ func New(db *pgxpool.Pool, cfg config.Config) http.Handler {
 		r.Post("/auth/logout", s.logout)
 
 		r.Get("/me", s.me)
+		r.Patch("/me", s.updateMe)
 
 		r.Get("/places", s.listPlaces)
 		r.Post("/places", s.createPlace)
@@ -247,15 +255,61 @@ func (s *Server) logout(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) me(w http.ResponseWriter, r *http.Request) {
-	cookie, err := r.Cookie("travel_map_session")
-	if err != nil {
+	user, ok := s.currentUser(r)
+	if !ok {
 		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "unauthorized"})
 		return
 	}
 
-	user, err := s.authRepository.CurrentUser(r.Context(), cookie.Value)
-	if errors.Is(err, auth.ErrUnauthorized) {
+	writeJSON(w, http.StatusOK, map[string]any{"user": user})
+}
+
+func (s *Server) updateMe(w http.ResponseWriter, r *http.Request) {
+	user, ok := s.currentUser(r)
+	if !ok {
 		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "unauthorized"})
+		return
+	}
+
+	var request updateMeRequest
+	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid request"})
+		return
+	}
+
+	request.DisplayName = strings.TrimSpace(request.DisplayName)
+	request.Email = strings.TrimSpace(request.Email)
+
+	validationErrors := validateUpdateMeRequest(request)
+	if len(validationErrors) > 0 {
+		writeJSON(w, http.StatusBadRequest, map[string]any{
+			"error":  "validation failed",
+			"fields": validationErrors,
+		})
+		return
+	}
+
+	currentPassword := normalizeOptionalString(request.CurrentPassword)
+	newPassword := normalizeOptionalString(request.NewPassword)
+
+	updatedUser, err := s.authRepository.UpdateProfile(r.Context(), auth.UpdateProfileInput{
+		UserID:          user.ID.String(),
+		DisplayName:     request.DisplayName,
+		Email:           request.Email,
+		CurrentPassword: currentPassword,
+		NewPassword:     newPassword,
+	})
+	if errors.Is(err, auth.ErrCurrentPasswordInvalid) {
+		writeJSON(w, http.StatusBadRequest, map[string]any{
+			"error": "validation failed",
+			"fields": map[string]string{
+				"current_password": "Current password is incorrect.",
+			},
+		})
+		return
+	}
+	if errors.Is(err, auth.ErrUserAlreadyExists) {
+		writeJSON(w, http.StatusConflict, map[string]string{"error": "user already exists"})
 		return
 	}
 	if err != nil {
@@ -263,7 +317,7 @@ func (s *Server) me(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	writeJSON(w, http.StatusOK, map[string]any{"user": user})
+	writeJSON(w, http.StatusOK, map[string]any{"user": updatedUser})
 }
 
 func (s *Server) listPlaces(w http.ResponseWriter, r *http.Request) {
@@ -354,19 +408,19 @@ func (s *Server) deletePlace(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) listFlights(w http.ResponseWriter, r *http.Request) {
-
 	user, ok := s.currentUser(r)
 	if !ok {
 		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "unauthorized"})
 		return
 	}
+
 	result, err := s.flightsRepository.ListByUserID(r.Context(), user.ID)
 	if err != nil {
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "internal server error"})
 		return
 	}
-	writeJSON(w, http.StatusOK, map[string]any{"flights": result})
 
+	writeJSON(w, http.StatusOK, map[string]any{"flights": result})
 }
 
 func (s *Server) createFlight(w http.ResponseWriter, r *http.Request) {
@@ -563,6 +617,37 @@ func validateCreateFlightRequest(request createFlightRequest) map[string]string 
 
 	if request.ArrivalTime == nil || strings.TrimSpace(*request.ArrivalTime) == "" {
 		errs["arrival_time"] = "Arrival time is required."
+	}
+
+	return errs
+}
+
+func validateUpdateMeRequest(request updateMeRequest) map[string]string {
+	errs := make(map[string]string)
+
+	if request.DisplayName == "" {
+		errs["display_name"] = "Display name is required."
+	} else if len(request.DisplayName) > 80 {
+		errs["display_name"] = "Display name must be at most 80 characters."
+	}
+
+	if request.Email == "" {
+		errs["email"] = "Email is required."
+	} else if _, err := mail.ParseAddress(request.Email); err != nil {
+		errs["email"] = "Email is invalid."
+	}
+
+	newPassword := normalizeOptionalString(request.NewPassword)
+	currentPassword := normalizeOptionalString(request.CurrentPassword)
+
+	if newPassword != nil {
+		if len(*newPassword) < 6 {
+			errs["new_password"] = "New password must be at least 6 characters."
+		}
+
+		if currentPassword == nil {
+			errs["current_password"] = "Current password is required to change password."
+		}
 	}
 
 	return errs

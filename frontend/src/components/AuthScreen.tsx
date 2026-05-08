@@ -5,7 +5,7 @@ type User = {
   username: string;
   email: string;
   display_name: string;
-  avatar_url: string | null;
+  avatar_url: string;
 };
 
 type Props = {

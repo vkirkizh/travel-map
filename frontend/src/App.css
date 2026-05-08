@@ -603,3 +603,125 @@ body,
     width: 100%;
   }
 }
+
+.settings-card {
+  width: min(100%, 620px);
+  padding: 40px;
+  border: 1px solid rgb(226 232 240);
+  border-radius: 32px;
+  background: rgb(255 255 255 / 90%);
+  box-shadow: 0 24px 80px rgb(15 23 42 / 12%);
+  backdrop-filter: blur(14px);
+}
+
+.settings-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 24px;
+  align-items: flex-start;
+  margin-bottom: 24px;
+}
+
+.settings-header h1 {
+  margin: 0;
+  color: #0f172a;
+  font-size: 40px;
+  line-height: 1;
+  letter-spacing: -0.04em;
+}
+
+.settings-header p {
+  margin: 12px 0 0;
+  color: #64748b;
+  line-height: 1.5;
+}
+
+.settings-avatar {
+  width: 72px;
+  height: 72px;
+  border-radius: 999px;
+  background: #e2e8f0;
+}
+
+.settings-card label {
+  display: grid;
+  gap: 8px;
+  margin-top: 14px;
+  color: #334155;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.settings-card input {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid #cbd5e1;
+  border-radius: 14px;
+  padding: 12px 14px;
+  color: #0f172a;
+  font: inherit;
+}
+
+.settings-card input:disabled {
+  background: #f1f5f9;
+  color: #64748b;
+}
+
+.settings-card input:focus {
+  border-color: #2563eb;
+  outline: none;
+  box-shadow: 0 0 0 4px rgb(37 99 235 / 12%);
+}
+
+.settings-divider {
+  margin: 28px 0 8px;
+  border-top: 1px solid #e2e8f0;
+}
+
+.form-success {
+  margin-top: 16px;
+  border-radius: 14px;
+  padding: 12px 14px;
+  background: #dcfce7;
+  color: #166534;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.ghost-link {
+  display: inline-flex;
+  margin-top: 32px;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 20px;
+  border-radius: 999px;
+  background: #e2e8f0;
+  color: #0f172a;
+  font-size: 14px;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.ghost-link:hover {
+  background: #cbd5e1;
+}
+
+@media (max-width: 720px) {
+  .settings-card {
+    padding: 28px 22px;
+    border-radius: 24px;
+  }
+
+  .settings-header {
+    flex-direction: column-reverse;
+  }
+
+  .settings-header h1 {
+    font-size: 32px;
+  }
+
+  .settings-avatar {
+    width: 64px;
+    height: 64px;
+  }
+}

@@ -22,6 +22,9 @@ Current MVP:
 - Private dashboard
 - Places CRUD
 - Nominatim geocoding with PostgreSQL cache
+- Gravatar-based profile avatars
+- Profile settings
+- Email and password updates
 
 ## Local development
 
@@ -54,6 +57,7 @@ Open:
 ```text
 http://localhost:5173/
 http://localhost:5173/vkirkizh/
+http://localhost:5173/app/
 ```
 
 Test user:

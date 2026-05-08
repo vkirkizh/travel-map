@@ -1,10 +1,11 @@
 import {useEffect, useState} from "react";
 import {CircleMarker, MapContainer, Polyline, Popup, TileLayer, useMap} from "react-leaflet";
+import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import "./App.css";
 import {AuthScreen, type User} from "./components/AuthScreen";
 import {Dashboard} from "./components/Dashboard";
-import L from "leaflet";
+import {ProfileSettings} from "./components/ProfileSettings";
 
 type Place = {
   id: string;
@@ -52,8 +53,8 @@ function App() {
     return <LandingPage />;
   }
 
-  if (pathname === "/app" || pathname === "/app/") {
-    return <PrivateAppPage />;
+  if (pathname === "/app" || pathname === "/app/" || pathname === "/app/settings" || pathname === "/app/settings/") {
+    return <PrivateAppPage pathname={pathname} />;
   }
 
   const username = pathname.replace(/^\/+|\/+$/g, "");
@@ -235,12 +236,16 @@ function PublicMapPage({ username }: { username: string }) {
   );
 }
 
-function PrivateAppPage() {
+function PrivateAppPage({ pathname }: { pathname: string }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    setPageTitle("Travel Map — Dashboard");
+    setPageTitle(
+      pathname.startsWith("/app/settings")
+        ? "Travel Map — Settings"
+        : "Travel Map — Dashboard",
+    );
 
     fetch(`${apiBaseUrl}/api/me`, {
       credentials: "include",
@@ -270,6 +275,16 @@ function PrivateAppPage() {
   if (!user) {
     return (
       <AuthScreen apiBaseUrl={apiBaseUrl} onAuthenticated={(user) => setUser(user)} />
+    );
+  }
+
+  if (pathname.startsWith("/app/settings")) {
+    return (
+      <ProfileSettings
+        apiBaseUrl={apiBaseUrl}
+        user={user}
+        onUserUpdated={(user) => setUser(user)}
+      />
     );
   }
 

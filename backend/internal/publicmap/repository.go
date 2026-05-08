@@ -6,6 +6,8 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+
+	"github.com/vkirkizh/travel-map/backend/internal/auth"
 )
 
 var ErrUserNotFound = errors.New("user not found")
@@ -24,14 +26,14 @@ func (r *Repository) GetByUsername(ctx context.Context, username string) (*MapRe
 	response := &MapResponse{}
 
 	err := r.db.QueryRow(ctx, `
-		SELECT id, username, display_name, avatar_url
+		SELECT id, username, email, display_name
 		FROM users
 		WHERE username = $1
 	`, username).Scan(
 		&userID,
 		&response.User.Username,
+		&response.User.Email,
 		&response.User.DisplayName,
-		&response.User.AvatarURL,
 	)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, ErrUserNotFound
@@ -50,8 +52,11 @@ func (r *Repository) GetByUsername(ctx context.Context, username string) (*MapRe
 		return nil, err
 	}
 
+	response.User.AvatarURL = auth.GravatarURL(response.User.Email)
+
 	response.Places = places
 	response.Flights = flights
+
 	response.Stats = Stats{
 		CountriesVisited: countUniqueCountries(places),
 		PlacesVisited:    len(places),
