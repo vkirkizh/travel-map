@@ -45,7 +45,7 @@ func (r *Repository) GetByUsername(ctx context.Context, username string) (*MapRe
 		return nil, err
 	}
 
-	flights, totalDistanceKM, err := r.getFlights(ctx, userID)
+	flights, totalDistanceKM, flightHours, err := r.getFlights(ctx, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -57,6 +57,7 @@ func (r *Repository) GetByUsername(ctx context.Context, username string) (*MapRe
 		PlacesVisited:    len(places),
 		FlightsTaken:     len(flights),
 		FlightDistanceKM: totalDistanceKM,
+		FlightHours:      flightHours,
 	}
 
 	return response, nil
@@ -99,12 +100,14 @@ func (r *Repository) getPlaces(ctx context.Context, userID string) ([]Place, err
 	return places, nil
 }
 
-func (r *Repository) getFlights(ctx context.Context, userID string) ([]Flight, int, error) {
+func (r *Repository) getFlights(ctx context.Context, userID string) ([]Flight, int, int, error) {
 	rows, err := r.db.Query(ctx, `
 		SELECT
 			f.id,
 			f.from_airport_iata,
 			f.to_airport_iata,
+			f.departure_time,
+			f.arrival_time,
 			from_airport.lat,
 			from_airport.lng,
 			to_airport.lat,
@@ -117,12 +120,13 @@ func (r *Repository) getFlights(ctx context.Context, userID string) ([]Flight, i
 		ORDER BY f.created_at ASC
 	`, userID)
 	if err != nil {
-		return nil, 0, err
+		return nil, 0, 0, err
 	}
 	defer rows.Close()
 
 	flights := make([]Flight, 0)
 	totalDistanceKM := 0
+	totalFlightHours := 0
 
 	for rows.Next() {
 		var flight Flight
@@ -132,24 +136,31 @@ func (r *Repository) getFlights(ctx context.Context, userID string) ([]Flight, i
 			&flight.ID,
 			&flight.From,
 			&flight.To,
+			&flight.DepartureTime,
+			&flight.ArrivalTime,
 			&flight.FromPoint.Lat,
 			&flight.FromPoint.Lng,
 			&flight.ToPoint.Lat,
 			&flight.ToPoint.Lng,
 			&distanceKM,
 		); err != nil {
-			return nil, 0, err
+			return nil, 0, 0, err
 		}
 
 		totalDistanceKM += distanceKM
+
+		if flight.DepartureTime != nil && flight.ArrivalTime != nil {
+			totalFlightHours += int(flight.ArrivalTime.Sub(*flight.DepartureTime).Hours())
+		}
+
 		flights = append(flights, flight)
 	}
 
 	if err := rows.Err(); err != nil {
-		return nil, 0, err
+		return nil, 0, 0, err
 	}
 
-	return flights, totalDistanceKM, nil
+	return flights, totalDistanceKM, totalFlightHours, nil
 }
 
 func countUniqueCountries(places []Place) int {

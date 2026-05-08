@@ -49,7 +49,11 @@ INSERT INTO airports (
 )
 VALUES
   ('BER', 'Berlin Brandenburg Airport', 'Berlin', 'DE', 52.3667, 13.5033),
-  ('ZAG', 'Zagreb Airport', 'Zagreb', 'HR', 45.7429, 16.0688)
+  ('ZAG', 'Zagreb Airport', 'Zagreb', 'HR', 45.7429, 16.0688),
+  ('VIE', 'Vienna International Airport', 'Vienna', 'AT', 48.1103, 16.5697),
+  ('CDG', 'Charles de Gaulle Airport', 'Paris', 'FR', 49.0097, 2.5479),
+  ('FCO', 'Leonardo da Vinci Rome Fiumicino Airport', 'Rome', 'IT', 41.8003, 12.2389),
+  ('LHR', 'Heathrow Airport', 'London', 'GB', 51.4700, -0.4543)
   ON CONFLICT (iata_code) DO UPDATE SET
   icao_code = EXCLUDED.icao_code,
   name = EXCLUDED.name,

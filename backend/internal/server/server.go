@@ -13,9 +13,10 @@ import (
 	"github.com/go-chi/cors"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/vkirkizh/travel-map/backend/internal/config"
 
 	"github.com/vkirkizh/travel-map/backend/internal/auth"
+	"github.com/vkirkizh/travel-map/backend/internal/config"
+	"github.com/vkirkizh/travel-map/backend/internal/flights"
 	"github.com/vkirkizh/travel-map/backend/internal/geocoding"
 	"github.com/vkirkizh/travel-map/backend/internal/places"
 	"github.com/vkirkizh/travel-map/backend/internal/publicmap"
@@ -27,6 +28,7 @@ type Server struct {
 	authRepository      *auth.Repository
 	placesRepository    *places.Repository
 	geocodingService    *geocoding.Service
+	flightsRepository   *flights.Repository
 }
 
 type registerRequest struct {
@@ -45,12 +47,21 @@ type createPlaceRequest struct {
 	Query string `json:"query"`
 }
 
+type createFlightRequest struct {
+	FromAirportIATA string  `json:"from_airport_iata"`
+	ToAirportIATA   string  `json:"to_airport_iata"`
+	DepartureTime   *string `json:"departure_time"`
+	ArrivalTime     *string `json:"arrival_time"`
+	FlightNumber    *string `json:"flight_number"`
+}
+
 func New(db *pgxpool.Pool, cfg config.Config) http.Handler {
 	s := &Server{
 		db:                  db,
 		publicMapRepository: publicmap.NewRepository(db),
 		authRepository:      auth.NewRepository(db),
 		placesRepository:    places.NewRepository(db),
+		flightsRepository:   flights.NewRepository(db),
 		geocodingService: geocoding.NewService(
 			db,
 			cfg.NominatimBaseURL,
@@ -103,6 +114,10 @@ func New(db *pgxpool.Pool, cfg config.Config) http.Handler {
 		r.Get("/places", s.listPlaces)
 		r.Post("/places", s.createPlace)
 		r.Delete("/places/{id}", s.deletePlace)
+
+		r.Get("/flights", s.listFlights)
+		r.Post("/flights", s.createFlight)
+		r.Delete("/flights/{id}", s.deleteFlight)
 	})
 
 	return r
@@ -338,6 +353,121 @@ func (s *Server) deletePlace(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
 }
 
+func (s *Server) listFlights(w http.ResponseWriter, r *http.Request) {
+
+	user, ok := s.currentUser(r)
+	if !ok {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "unauthorized"})
+		return
+	}
+	result, err := s.flightsRepository.ListByUserID(r.Context(), user.ID)
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "internal server error"})
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"flights": result})
+
+}
+
+func (s *Server) createFlight(w http.ResponseWriter, r *http.Request) {
+	user, ok := s.currentUser(r)
+	if !ok {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "unauthorized"})
+		return
+	}
+
+	var request createFlightRequest
+	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid request"})
+		return
+	}
+
+	request.FromAirportIATA = strings.ToUpper(strings.TrimSpace(request.FromAirportIATA))
+	request.ToAirportIATA = strings.ToUpper(strings.TrimSpace(request.ToAirportIATA))
+	validationErrors := validateCreateFlightRequest(request)
+	if len(validationErrors) > 0 {
+		writeJSON(w, http.StatusBadRequest, map[string]any{
+			"error":  "validation failed",
+			"fields": validationErrors,
+		})
+		return
+	}
+
+	departureTime, err := parseRequiredTime(request.DepartureTime)
+	if err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]any{
+			"error": "validation failed",
+			"fields": map[string]string{
+				"departure_time": "Departure time is invalid.",
+			},
+		})
+		return
+	}
+
+	arrivalTime, err := parseRequiredTime(request.ArrivalTime)
+	if err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]any{
+			"error": "validation failed",
+			"fields": map[string]string{
+				"arrival_time": "Arrival time is invalid.",
+			},
+		})
+		return
+	}
+
+	if arrivalTime.Before(*departureTime) {
+		writeJSON(w, http.StatusBadRequest, map[string]any{
+			"error": "validation failed",
+			"fields": map[string]string{
+				"arrival_time": "Arrival time must be after departure time.",
+			},
+		})
+		return
+	}
+
+	flightNumber := normalizeOptionalString(request.FlightNumber)
+	created, err := s.flightsRepository.Create(
+		r.Context(),
+		user.ID,
+		request.FromAirportIATA,
+		request.ToAirportIATA,
+		departureTime,
+		arrivalTime,
+		flightNumber,
+	)
+	if errors.Is(err, flights.ErrAirportNotFound) {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "airport not found"})
+		return
+	}
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "internal server error"})
+		return
+	}
+
+	writeJSON(w, http.StatusCreated, map[string]any{"flight": created})
+}
+
+func (s *Server) deleteFlight(w http.ResponseWriter, r *http.Request) {
+	user, ok := s.currentUser(r)
+	if !ok {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "unauthorized"})
+		return
+	}
+
+	flightID, err := uuid.Parse(chi.URLParam(r, "id"))
+	if err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid flight id"})
+		return
+	}
+
+	if err := s.flightsRepository.Delete(r.Context(), user.ID, flightID); err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "internal server error"})
+		return
+	}
+
+	writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
+}
+
 func (s *Server) currentUser(r *http.Request) (*auth.User, bool) {
 	cookie, err := r.Cookie("travel_map_session")
 	if err != nil {
@@ -390,22 +520,74 @@ func validateRegisterRequest(request registerRequest) map[string]string {
 }
 
 func validateLoginRequest(request loginRequest) map[string]string {
-	errors := make(map[string]string)
+	errs := make(map[string]string)
 
 	email := strings.TrimSpace(request.Email)
 	password := strings.TrimSpace(request.Password)
 
 	if email == "" {
-		errors["email"] = "Email is required."
+		errs["email"] = "Email is required."
 	} else if _, err := mail.ParseAddress(email); err != nil {
-		errors["email"] = "Email is invalid."
+		errs["email"] = "Email is invalid."
 	}
 
 	if password == "" {
-		errors["password"] = "Password is required."
+		errs["password"] = "Password is required."
 	}
 
-	return errors
+	return errs
+}
+
+func validateCreateFlightRequest(request createFlightRequest) map[string]string {
+	errs := make(map[string]string)
+
+	if request.FromAirportIATA == "" {
+		errs["from_airport_iata"] = "Departure airport is required."
+	} else if len(request.FromAirportIATA) != 3 {
+		errs["from_airport_iata"] = "Departure airport must be a 3-letter IATA code."
+	}
+
+	if request.ToAirportIATA == "" {
+		errs["to_airport_iata"] = "Arrival airport is required."
+	} else if len(request.ToAirportIATA) != 3 {
+		errs["to_airport_iata"] = "Arrival airport must be a 3-letter IATA code."
+	}
+
+	if request.FromAirportIATA != "" && request.FromAirportIATA == request.ToAirportIATA {
+		errs["to_airport_iata"] = "Arrival airport must be different from departure airport."
+	}
+
+	if request.DepartureTime == nil || strings.TrimSpace(*request.DepartureTime) == "" {
+		errs["departure_time"] = "Departure time is required."
+	}
+
+	if request.ArrivalTime == nil || strings.TrimSpace(*request.ArrivalTime) == "" {
+		errs["arrival_time"] = "Arrival time is required."
+	}
+
+	return errs
+}
+
+func parseRequiredTime(value *string) (*time.Time, error) {
+	if value == nil {
+		return nil, errors.New("time is required")
+	}
+	parsed, err := time.Parse(time.RFC3339, strings.TrimSpace(*value))
+	if err != nil {
+		return nil, err
+	}
+	return &parsed, nil
+}
+
+func normalizeOptionalString(value *string) *string {
+	if value == nil {
+		return nil
+	}
+	normalized := strings.TrimSpace(*value)
+	if normalized == "" {
+		return nil
+	}
+	return &normalized
 }
 
 func setSessionCookie(w http.ResponseWriter, token string) {

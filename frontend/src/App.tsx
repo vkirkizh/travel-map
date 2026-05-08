@@ -1,9 +1,10 @@
 import {useEffect, useState} from "react";
-import {MapContainer, Marker, Polyline, Popup, TileLayer} from "react-leaflet";
+import {CircleMarker, MapContainer, Polyline, Popup, TileLayer, useMap} from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import "./App.css";
 import {AuthScreen, type User} from "./components/AuthScreen";
 import {Dashboard} from "./components/Dashboard";
+import L from "leaflet";
 
 type Place = {
   id: string;
@@ -32,6 +33,7 @@ type Stats = {
   places_visited: number;
   flights_taken: number;
   flight_distance_km: number;
+  flight_hours: number;
 };
 
 type MapResponse = {
@@ -128,13 +130,22 @@ function PublicMapPage({ username }: { username: string }) {
       >
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
         />
 
         {data.places.map((place) => (
-          <Marker key={place.id} position={[place.lat, place.lng]}>
+          <CircleMarker
+            key={place.id}
+            center={[place.lat, place.lng]}
+            radius={8}
+            pathOptions={{
+              opacity: 1,
+              fillOpacity: 0.85,
+              weight: 2,
+            }}
+          >
             <Popup>{place.title}</Popup>
-          </Marker>
+          </CircleMarker>
         ))}
 
         {data.flights.map((flight) => (
@@ -144,8 +155,44 @@ function PublicMapPage({ username }: { username: string }) {
               [flight.from_point.lat, flight.from_point.lng],
               [flight.to_point.lat, flight.to_point.lng],
             ]}
+            pathOptions={{
+              opacity: 0.4,
+              weight: 2,
+            }}
           />
         ))}
+
+        {data.flights.map((flight) => (
+          <CircleMarker
+            key={`${flight.id}-from`}
+            center={[flight.from_point.lat, flight.from_point.lng]}
+            radius={4}
+            pathOptions={{
+              opacity: 0.75,
+              fillOpacity: 0.9,
+              weight: 1,
+            }}
+          >
+            <Popup>{flight.from}</Popup>
+          </CircleMarker>
+        ))}
+
+        {data.flights.map((flight) => (
+          <CircleMarker
+            key={`${flight.id}-to`}
+            center={[flight.to_point.lat, flight.to_point.lng]}
+            radius={4}
+            pathOptions={{
+              opacity: 0.75,
+              fillOpacity: 0.9,
+              weight: 1,
+            }}
+          >
+            <Popup>{flight.to}</Popup>
+          </CircleMarker>
+        ))}
+
+        <FitMapBounds data={data} />
       </MapContainer>
 
       <div className="profile-card">
@@ -178,6 +225,10 @@ function PublicMapPage({ username }: { username: string }) {
         <div>
           <strong>{data.stats.flight_distance_km}</strong>
           <span>km flown</span>
+        </div>
+        <div>
+          <strong>{data.stats.flight_hours}</strong>
+          <span>hours flown</span>
         </div>
       </div>
     </div>
@@ -229,6 +280,40 @@ function PrivateAppPage() {
       onLogout={() => setUser(null)}
     />
   );
+}
+
+function FitMapBounds({ data }: { data: MapResponse }) {
+  const map = useMap();
+
+  useEffect(() => {
+    const points: [number, number][] = [];
+
+    data.places.forEach((place) => {
+      points.push([place.lat, place.lng]);
+    });
+
+    data.flights.forEach((flight) => {
+      points.push([flight.from_point.lat, flight.from_point.lng]);
+      points.push([flight.to_point.lat, flight.to_point.lng]);
+    });
+
+    if (points.length === 0) {
+      return;
+    }
+
+    if (points.length === 1) {
+      map.setView(points[0], 8);
+      return;
+    }
+
+    const bounds = L.latLngBounds(points);
+    map.fitBounds(bounds, {
+      padding: [80, 80],
+      maxZoom: 8,
+    });
+  }, [data, map]);
+
+  return null;
 }
 
 function setPageTitle(title: string) {

@@ -1,6 +1,10 @@
 package publicmap
 
-import "github.com/google/uuid"
+import (
+	"time"
+
+	"github.com/google/uuid"
+)
 
 type User struct {
 	Username    string  `json:"username"`
@@ -22,11 +26,13 @@ type Point struct {
 }
 
 type Flight struct {
-	ID        uuid.UUID `json:"id"`
-	From      string    `json:"from"`
-	To        string    `json:"to"`
-	FromPoint Point     `json:"from_point"`
-	ToPoint   Point     `json:"to_point"`
+	ID            uuid.UUID  `json:"id"`
+	From          string     `json:"from"`
+	To            string     `json:"to"`
+	FromPoint     Point      `json:"from_point"`
+	ToPoint       Point      `json:"to_point"`
+	DepartureTime *time.Time `json:"departure_time"`
+	ArrivalTime   *time.Time `json:"arrival_time"`
 }
 
 type Stats struct {
@@ -34,6 +40,7 @@ type Stats struct {
 	PlacesVisited    int `json:"places_visited"`
 	FlightsTaken     int `json:"flights_taken"`
 	FlightDistanceKM int `json:"flight_distance_km"`
+	FlightHours      int `json:"flight_hours"`
 }
 
 type MapResponse struct {

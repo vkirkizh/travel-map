@@ -143,7 +143,7 @@ export function PlacesManager({ apiBaseUrl }: Props) {
       {isLoading ? (
         <div className="empty-state">Loading places...</div>
       ) : places.length === 0 ? (
-        <div className="empty-state">No places yet.</div>
+        <div className="empty-state">Add your first visited place to see it on your public map.</div>
       ) : (
         <div className="places-list">
           {places.map((place) => (

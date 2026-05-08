@@ -51,13 +51,13 @@ make frontend-run
 ```
 
 Open:
-```bash
+```text
 http://localhost:5173/
 http://localhost:5173/vkirkizh/
 ```
 
 Test user:
-```bash
+```text
 Login: valery@kirkizh.com
 Password: 123456
 ```
@@ -83,6 +83,27 @@ Relevant tables:
 - `geocoding_cache`
 - `countries`
 - `places`
+
+## Reference data
+
+Travel Map uses OurAirports CSV datasets for countries and airports.
+Download these files into the local `data` directory:
+```text
+data/countries.csv
+data/airports.csv
+```
+
+Import reference data:
+```bash
+make import-countries
+make import-airports
+```
+
+## Screenshots
+
+### Public travel map
+
+![Public travel map](docs/screenshots/public-map.png)
 
 ---
 
