@@ -12,7 +12,11 @@ INSERT INTO countries (code, name)
 VALUES
   ('DE', 'Germany'),
   ('HR', 'Croatia'),
-  ('GB', 'United Kingdom')
+  ('GB', 'United Kingdom'),
+  ('AT', 'Austria'),
+  ('CZ', 'Czech Republic'),
+  ('FR', 'France'),
+  ('IT', 'Italy')
   ON CONFLICT (code) DO UPDATE SET
   name = EXCLUDED.name;
 
@@ -26,7 +30,7 @@ INSERT INTO users (
 VALUES (
     'vkirkizh',
     'valery@kirkizh.com',
-    'dev-password-hash',
+    '$2a$10$uk9CdFZbGiIm4RpQdXoHHeEjU5JiKC9tuP5TNuZs5RPYwLVuNHQsq',
     'Valery Kirkizh',
     NULL
   )

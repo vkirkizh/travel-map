@@ -11,6 +11,18 @@ A personal travel map for sharing visited places, flights and travel statistics.
 - Leaflet
 - Docker Compose
 
+## Features
+
+Current MVP:
+- Public user travel map
+- Visited places on OpenStreetMap
+- Flight lines prototype
+- Travel statistics
+- Cookie-based authentication
+- Private dashboard
+- Places CRUD
+- Nominatim geocoding with PostgreSQL cache
+
 ## Local development
 
 Start database:
@@ -44,6 +56,12 @@ http://localhost:5173/
 http://localhost:5173/vkirkizh/
 ```
 
+Test user:
+```bash
+Login: valery@kirkizh.com
+Password: 123456
+```
+
 Health checks:
 ```bash
 curl http://localhost:8080/healthz
@@ -55,6 +73,16 @@ Development checks:
 make backend-lint
 make backend-test
 ```
+
+## Geocoding
+
+Travel Map uses Nominatim for geocoding during MVP development.
+The backend caches geocoding results in PostgreSQL to avoid repeated external API calls for the same normalized query.
+
+Relevant tables:
+- `geocoding_cache`
+- `countries`
+- `places`
 
 ---
 

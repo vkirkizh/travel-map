@@ -2,12 +2,8 @@ import {useEffect, useState} from "react";
 import {MapContainer, Marker, Polyline, Popup, TileLayer} from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import "./App.css";
-
-type User = {
-  username: string;
-  display_name: string;
-  avatar_url: string | null;
-};
+import {AuthScreen, type User} from "./components/AuthScreen";
+import {Dashboard} from "./components/Dashboard";
 
 type Place = {
   id: string;
@@ -55,7 +51,7 @@ function App() {
   }
 
   if (pathname === "/app" || pathname === "/app/") {
-    return <AppPlaceholder />;
+    return <PrivateAppPage />;
   }
 
   const username = pathname.replace(/^\/+|\/+$/g, "");
@@ -79,28 +75,6 @@ function LandingPage() {
         </p>
         <p>
           Created by Valery Kirkizh: <a href="mailto:valery@kirkizh.com">Email</a> &bull;&nbsp;<a href="https://www.linkedin.com/in/vkirkizh/" rel="me">LinkedIn</a> &bull;&nbsp;<a href="https://github.com/vkirkizh" rel="me">GitHub</a>
-        </p>
-        <a href="/vkirkizh/" className="landing-link">
-          View demo map
-        </a>
-      </div>
-    </div>
-  );
-}
-
-function AppPlaceholder() {
-  useEffect(() => {
-    setPageTitle("Travel Map — Dashboard");
-  }, []);
-
-  return (
-    <div className="landing-page">
-      <div className="landing-card">
-        <div className="landing-eyebrow">Travel Map App</div>
-        <h1>Private dashboard is coming soon.</h1>
-        <p>
-          This page will contain profile settings, places management and flight
-          management.
         </p>
         <a href="/vkirkizh/" className="landing-link">
           View demo map
@@ -207,6 +181,53 @@ function PublicMapPage({ username }: { username: string }) {
         </div>
       </div>
     </div>
+  );
+}
+
+function PrivateAppPage() {
+  const [user, setUser] = useState<User | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    setPageTitle("Travel Map — Dashboard");
+
+    fetch(`${apiBaseUrl}/api/me`, {
+      credentials: "include",
+    })
+      .then(async (response) => {
+        if (response.status === 401) {
+          setUser(null);
+          return;
+        }
+
+        if (!response.ok) {
+          throw new Error("Failed to load current user");
+        }
+
+        const payload = await response.json();
+        setUser(payload.user);
+      })
+      .finally(() => {
+        setIsLoading(false);
+      });
+  }, []);
+
+  if (isLoading) {
+    return <div className="loading">Loading Travel Map App...</div>;
+  }
+
+  if (!user) {
+    return (
+      <AuthScreen apiBaseUrl={apiBaseUrl} onAuthenticated={(user) => setUser(user)} />
+    );
+  }
+
+  return (
+    <Dashboard
+      apiBaseUrl={apiBaseUrl}
+      user={user}
+      onLogout={() => setUser(null)}
+    />
   );
 }
 

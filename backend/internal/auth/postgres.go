@@ -3,7 +3,7 @@ package auth
 import (
 	"errors"
 
-	"github.com/jackc/pgconn"
+	"github.com/jackc/pgx/v5/pgconn"
 )
 
 func isUniqueViolation(err error) bool {
