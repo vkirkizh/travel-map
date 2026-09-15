@@ -2,7 +2,7 @@
 
 ## Context
 
-Travel Map is an MVP with a Go backend, React frontend, PostgreSQL database and a small number of business domains: users, places, flights, geocoding and public map rendering.
+Travel Map is an MVP with a Go backend, React frontend, PostgreSQL database and a small number of business domains: users, places, geocoding and public map rendering.
 
 ## Decision
 

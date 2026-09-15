@@ -1,6 +1,4 @@
 DROP TABLE IF EXISTS geocoding_cache;
-DROP TABLE IF EXISTS flights;
-DROP TABLE IF EXISTS airports;
 DROP TABLE IF EXISTS places;
 DROP TABLE IF EXISTS countries;
 DROP TABLE IF EXISTS sessions;

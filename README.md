@@ -1,6 +1,6 @@
 # Travel Map
 
-A personal travel map for sharing visited places, flights and travel statistics.
+A personal travel map for sharing visited places and travel statistics.
 
 ## Stack
 
@@ -16,7 +16,6 @@ A personal travel map for sharing visited places, flights and travel statistics.
 Current MVP:
 - Public user travel map
 - Visited places on OpenStreetMap
-- Flight lines prototype
 - Travel statistics
 - Cookie-based authentication
 - Private dashboard
@@ -56,7 +55,7 @@ make frontend-run
 Open:
 ```text
 http://localhost:5173/
-http://localhost:5173/vkirkizh/
+http://localhost:5173/valery/
 http://localhost:5173/app/
 ```
 
@@ -90,25 +89,19 @@ Relevant tables:
 
 ## Reference data
 
-Travel Map uses OurAirports CSV datasets for countries and airports.
-Download these files into the local `data` directory:
+Travel Map uses the [OurAirports `countries.csv` dataset](https://ourairports.com/data/) as country reference data.
+Download [`countries.csv`](https://davidmegginson.github.io/ourairports-data/countries.csv) into the local `data` directory:
 ```text
 data/countries.csv
-data/airports.csv
 ```
 
 Import reference data:
 ```bash
 make import-countries
-make import-airports
 ```
 
-## Screenshots
+## Author
 
-### Public travel map
+Valery Kirkizh
 
-![Public travel map](docs/screenshots/public-map.png)
-
----
-
-Author: Valery Kirkizh (valery@kirkizh.com)
+[valery@kirkizh.com](mailto:valery@kirkizh.com)

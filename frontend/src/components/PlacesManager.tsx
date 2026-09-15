@@ -33,28 +33,26 @@ export function PlacesManager({ apiBaseUrl }: Props) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  async function loadPlaces() {
-    setError(null);
+  useEffect(() => {
+    async function loadPlaces() {
+      const response = await fetch(`${apiBaseUrl}/api/places`, {
+        credentials: "include",
+      });
 
-    const response = await fetch(`${apiBaseUrl}/api/places`, {
-      credentials: "include",
-    });
+      const payload = await response.json();
 
-    const payload = await response.json();
+      if (!response.ok) {
+        setError(getPlaceErrorMessage(payload.error));
+        return;
+      }
 
-    if (!response.ok) {
-      setError(getPlaceErrorMessage(payload.error));
-      return;
+      setPlaces(payload.places);
     }
 
-    setPlaces(payload.places);
-  }
-
-  useEffect(() => {
     loadPlaces()
       .catch(() => setError("Unable to load places."))
       .finally(() => setIsLoading(false));
-  }, []);
+  }, [apiBaseUrl]);
 
   async function addPlace(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();

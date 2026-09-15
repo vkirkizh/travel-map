@@ -1,5 +1,5 @@
 import {useEffect, useState} from "react";
-import {CircleMarker, MapContainer, Polyline, Popup, TileLayer, useMap} from "react-leaflet";
+import {CircleMarker, MapContainer, Popup, TileLayer, useMap} from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import "./App.css";
@@ -15,32 +15,20 @@ type Place = {
   lng: number;
 };
 
-type Flight = {
-  id: string;
-  from: string;
-  to: string;
-  from_point: {
-    lat: number;
-    lng: number;
-  };
-  to_point: {
-    lat: number;
-    lng: number;
-  };
+type PublicUser = {
+  username: string;
+  display_name: string;
+  avatar_url: string;
 };
 
 type Stats = {
   countries_visited: number;
   places_visited: number;
-  flights_taken: number;
-  flight_distance_km: number;
-  flight_hours: number;
 };
 
 type MapResponse = {
-  user: User;
+  user: PublicUser;
   places: Place[];
-  flights: Flight[];
   stats: Stats;
 };
 
@@ -73,14 +61,16 @@ function LandingPage() {
         <div className="landing-eyebrow">Travel Map</div>
         <h1>Share the places you have visited.</h1>
         <p>
-          A personal travel map with visited cities, landmarks, flights and
-          travel statistics.
+          A personal travel map with visited cities, landmarks and travel statistics.
         </p>
         <p>
           Created by Valery Kirkizh: <a href="mailto:valery@kirkizh.com">Email</a> &bull;&nbsp;<a href="https://www.linkedin.com/in/vkirkizh/" rel="me">LinkedIn</a> &bull;&nbsp;<a href="https://github.com/vkirkizh" rel="me">GitHub</a>
         </p>
-        <a href="/vkirkizh/" className="landing-link">
+        <a href="/valery/" className="landing-link">
           View demo map
+        </a>
+        <a href="/app/" className="landing-link">
+          Log In / Sign Up
         </a>
       </div>
     </div>
@@ -92,9 +82,6 @@ function PublicMapPage({ username }: { username: string }) {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    setData(null);
-    setError(null);
-
     setPageTitle(`Travel Map — @${username}`);
 
     fetch(`${apiBaseUrl}/api/public/users/${username}/map`)
@@ -149,50 +136,6 @@ function PublicMapPage({ username }: { username: string }) {
           </CircleMarker>
         ))}
 
-        {data.flights.map((flight) => (
-          <Polyline
-            key={flight.id}
-            positions={[
-              [flight.from_point.lat, flight.from_point.lng],
-              [flight.to_point.lat, flight.to_point.lng],
-            ]}
-            pathOptions={{
-              opacity: 0.4,
-              weight: 2,
-            }}
-          />
-        ))}
-
-        {data.flights.map((flight) => (
-          <CircleMarker
-            key={`${flight.id}-from`}
-            center={[flight.from_point.lat, flight.from_point.lng]}
-            radius={4}
-            pathOptions={{
-              opacity: 0.75,
-              fillOpacity: 0.9,
-              weight: 1,
-            }}
-          >
-            <Popup>{flight.from}</Popup>
-          </CircleMarker>
-        ))}
-
-        {data.flights.map((flight) => (
-          <CircleMarker
-            key={`${flight.id}-to`}
-            center={[flight.to_point.lat, flight.to_point.lng]}
-            radius={4}
-            pathOptions={{
-              opacity: 0.75,
-              fillOpacity: 0.9,
-              weight: 1,
-            }}
-          >
-            <Popup>{flight.to}</Popup>
-          </CircleMarker>
-        ))}
-
         <FitMapBounds data={data} />
       </MapContainer>
 
@@ -218,18 +161,6 @@ function PublicMapPage({ username }: { username: string }) {
         <div>
           <strong>{data.stats.places_visited}</strong>
           <span>places</span>
-        </div>
-        <div>
-          <strong>{data.stats.flights_taken}</strong>
-          <span>flights</span>
-        </div>
-        <div>
-          <strong>{data.stats.flight_distance_km}</strong>
-          <span>km flown</span>
-        </div>
-        <div>
-          <strong>{data.stats.flight_hours}</strong>
-          <span>hours flown</span>
         </div>
       </div>
     </div>
@@ -266,7 +197,7 @@ function PrivateAppPage({ pathname }: { pathname: string }) {
       .finally(() => {
         setIsLoading(false);
       });
-  }, []);
+  }, [pathname]);
 
   if (isLoading) {
     return <div className="loading">Loading Travel Map App...</div>;
@@ -305,11 +236,6 @@ function FitMapBounds({ data }: { data: MapResponse }) {
 
     data.places.forEach((place) => {
       points.push([place.lat, place.lng]);
-    });
-
-    data.flights.forEach((flight) => {
-      points.push([flight.from_point.lat, flight.from_point.lng]);
-      points.push([flight.to_point.lat, flight.to_point.lng]);
     });
 
     if (points.length === 0) {

@@ -2,7 +2,7 @@
 
 ## Context
 
-Travel Map is primarily a browser-based application. The app needs authentication for profile editing, places management and flight management.
+Travel Map is primarily a browser-based application. The app needs authentication for profile editing and places management.
 
 ## Decision
 

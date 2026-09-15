@@ -145,7 +145,7 @@ export function AuthScreen({ apiBaseUrl, onAuthenticated }: Props) {
           {mode === "login" ? "Login" : "Register"}
         </button>
 
-        <a className="secondary-link" href="/vkirkizh/">
+        <a className="secondary-link" href="/valery/">
           View public demo map
         </a>
       </form>

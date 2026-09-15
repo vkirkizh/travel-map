@@ -21,7 +21,10 @@ func NewRepository(db *pgxpool.Pool) *Repository {
 }
 
 func (r *Repository) GetByUsername(ctx context.Context, username string) (*MapResponse, error) {
-	var userID string
+	var (
+		userID string
+		email  string
+	)
 
 	response := &MapResponse{}
 
@@ -32,7 +35,7 @@ func (r *Repository) GetByUsername(ctx context.Context, username string) (*MapRe
 	`, username).Scan(
 		&userID,
 		&response.User.Username,
-		&response.User.Email,
+		&email,
 		&response.User.DisplayName,
 	)
 	if errors.Is(err, pgx.ErrNoRows) {
@@ -47,22 +50,13 @@ func (r *Repository) GetByUsername(ctx context.Context, username string) (*MapRe
 		return nil, err
 	}
 
-	flights, totalDistanceKM, flightHours, err := r.getFlights(ctx, userID)
-	if err != nil {
-		return nil, err
-	}
-
-	response.User.AvatarURL = auth.GravatarURL(response.User.Email)
+	response.User.AvatarURL = auth.GravatarURL(email)
 
 	response.Places = places
-	response.Flights = flights
 
 	response.Stats = Stats{
 		CountriesVisited: countUniqueCountries(places),
 		PlacesVisited:    len(places),
-		FlightsTaken:     len(flights),
-		FlightDistanceKM: totalDistanceKM,
-		FlightHours:      flightHours,
 	}
 
 	return response, nil
@@ -103,69 +97,6 @@ func (r *Repository) getPlaces(ctx context.Context, userID string) ([]Place, err
 	}
 
 	return places, nil
-}
-
-func (r *Repository) getFlights(ctx context.Context, userID string) ([]Flight, int, int, error) {
-	rows, err := r.db.Query(ctx, `
-		SELECT
-			f.id,
-			f.from_airport_iata,
-			f.to_airport_iata,
-			f.departure_time,
-			f.arrival_time,
-			from_airport.lat,
-			from_airport.lng,
-			to_airport.lat,
-			to_airport.lng,
-			COALESCE(f.distance_km, 0)
-		FROM flights f
-		JOIN airports from_airport ON from_airport.iata_code = f.from_airport_iata
-		JOIN airports to_airport ON to_airport.iata_code = f.to_airport_iata
-		WHERE f.user_id = $1
-		ORDER BY f.created_at ASC
-	`, userID)
-	if err != nil {
-		return nil, 0, 0, err
-	}
-	defer rows.Close()
-
-	flights := make([]Flight, 0)
-	totalDistanceKM := 0
-	totalFlightHours := 0
-
-	for rows.Next() {
-		var flight Flight
-		var distanceKM int
-
-		if err := rows.Scan(
-			&flight.ID,
-			&flight.From,
-			&flight.To,
-			&flight.DepartureTime,
-			&flight.ArrivalTime,
-			&flight.FromPoint.Lat,
-			&flight.FromPoint.Lng,
-			&flight.ToPoint.Lat,
-			&flight.ToPoint.Lng,
-			&distanceKM,
-		); err != nil {
-			return nil, 0, 0, err
-		}
-
-		totalDistanceKM += distanceKM
-
-		if flight.DepartureTime != nil && flight.ArrivalTime != nil {
-			totalFlightHours += int(flight.ArrivalTime.Sub(*flight.DepartureTime).Hours())
-		}
-
-		flights = append(flights, flight)
-	}
-
-	if err := rows.Err(); err != nil {
-		return nil, 0, 0, err
-	}
-
-	return flights, totalDistanceKM, totalFlightHours, nil
 }
 
 func countUniqueCountries(places []Place) int {

@@ -1,11 +1,6 @@
-DELETE FROM flights
-WHERE user_id = (
-  SELECT id FROM users WHERE username = 'vkirkizh'
-);
-
 DELETE FROM places
 WHERE user_id = (
-  SELECT id FROM users WHERE username = 'vkirkizh'
+  SELECT id FROM users WHERE username = 'valery'
 );
 
 INSERT INTO countries (code, name)
@@ -28,7 +23,7 @@ INSERT INTO users (
   avatar_url
 )
 VALUES (
-    'vkirkizh',
+    'valery',
     'valery@kirkizh.com',
     '$2a$10$uk9CdFZbGiIm4RpQdXoHHeEjU5JiKC9tuP5TNuZs5RPYwLVuNHQsq',
     'Valery Kirkizh',
@@ -38,29 +33,6 @@ VALUES (
   display_name = EXCLUDED.display_name,
   avatar_url = EXCLUDED.avatar_url,
   updated_at = now();
-
-INSERT INTO airports (
-  iata_code,
-  name,
-  city,
-  country_code,
-  lat,
-  lng
-)
-VALUES
-  ('BER', 'Berlin Brandenburg Airport', 'Berlin', 'DE', 52.3667, 13.5033),
-  ('ZAG', 'Zagreb Airport', 'Zagreb', 'HR', 45.7429, 16.0688),
-  ('VIE', 'Vienna International Airport', 'Vienna', 'AT', 48.1103, 16.5697),
-  ('CDG', 'Charles de Gaulle Airport', 'Paris', 'FR', 49.0097, 2.5479),
-  ('FCO', 'Leonardo da Vinci Rome Fiumicino Airport', 'Rome', 'IT', 41.8003, 12.2389),
-  ('LHR', 'Heathrow Airport', 'London', 'GB', 51.4700, -0.4543)
-  ON CONFLICT (iata_code) DO UPDATE SET
-  icao_code = EXCLUDED.icao_code,
-  name = EXCLUDED.name,
-  city = EXCLUDED.city,
-  country_code = EXCLUDED.country_code,
-  lat = EXCLUDED.lat,
-  lng = EXCLUDED.lng;
 
 INSERT INTO places (
   user_id,
@@ -84,26 +56,5 @@ VALUES
   ('HR', 'Zagreb, Croatia', 'zagreb croatia', 45.8150, 15.9819),
   ('GB', 'Stonehenge, United Kingdom', 'stonehenge united kingdom', 51.1789, -1.8262)
 ) AS p(country_code, title, query, lat, lng)
-WHERE u.username = 'vkirkizh'
-  ON CONFLICT DO NOTHING;
-
-INSERT INTO flights (
-  user_id,
-  from_airport_iata,
-  to_airport_iata,
-  departure_time,
-  arrival_time,
-  flight_number,
-  distance_km
-)
-SELECT
-  u.id,
-  'BER',
-  'ZAG',
-  '2024-05-01 10:00:00+00',
-  '2024-05-01 11:30:00+00',
-  'OU4401',
-  770
-FROM users u
-WHERE u.username = 'vkirkizh'
+WHERE u.username = 'valery'
   ON CONFLICT DO NOTHING;

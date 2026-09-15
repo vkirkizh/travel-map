@@ -1,6 +1,5 @@
 import type {User} from "./AuthScreen";
 import {PlacesManager} from "./PlacesManager";
-import {FlightsManager} from "./FlightsManager";
 
 type Props = {
   apiBaseUrl: string;
@@ -25,7 +24,7 @@ export function Dashboard({ apiBaseUrl, user, onLogout }: Props) {
           <div className="landing-eyebrow">Travel Map</div>
           <h1>Hello, {user.display_name}</h1>
           <p>
-            Manage your profile, visited places and flights.
+            Manage your profile and visited places.
           </p>
         </div>
 
@@ -42,8 +41,6 @@ export function Dashboard({ apiBaseUrl, user, onLogout }: Props) {
         </div>
 
         <PlacesManager apiBaseUrl={apiBaseUrl} />
-
-        <FlightsManager apiBaseUrl={apiBaseUrl} />
       </div>
     </div>
   );

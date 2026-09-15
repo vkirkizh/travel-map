@@ -41,33 +41,6 @@ CREATE TABLE places (
 CREATE INDEX places_user_id_idx ON places(user_id);
 CREATE INDEX places_country_code_idx ON places(country_code);
 
-CREATE TABLE airports (
-  iata_code CHAR(3) PRIMARY KEY,
-  name TEXT NOT NULL,
-  city TEXT,
-  country_code CHAR(2) REFERENCES countries(code),
-  lat DOUBLE PRECISION NOT NULL,
-  lng DOUBLE PRECISION NOT NULL
-);
-
-CREATE INDEX airports_country_code_idx ON airports(country_code);
-
-CREATE TABLE flights (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  from_airport_iata CHAR(3) NOT NULL REFERENCES airports(iata_code),
-  to_airport_iata CHAR(3) NOT NULL REFERENCES airports(iata_code),
-  departure_time TIMESTAMPTZ,
-  arrival_time TIMESTAMPTZ,
-  flight_number TEXT,
-  distance_km INTEGER,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
-);
-
-CREATE INDEX flights_user_id_idx ON flights(user_id);
-CREATE INDEX flights_from_airport_iata_idx ON flights(from_airport_iata);
-CREATE INDEX flights_to_airport_iata_idx ON flights(to_airport_iata);
-
 CREATE TABLE geocoding_cache (
   query_normalized TEXT PRIMARY KEY,
   provider TEXT NOT NULL,
