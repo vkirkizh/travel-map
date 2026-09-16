@@ -1,11 +1,19 @@
+# Environment
 .env
 
+# IDE / OS
 .idea/
 .DS_Store
 
+# Dependencies
 node_modules/
+
+# Build
 dist/
-coverage/
 tmp/
 
+# Tests
+coverage/
+
+# Logs
 *.log
