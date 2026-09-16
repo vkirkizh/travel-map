@@ -58,11 +58,7 @@ func New(db *pgxpool.Pool, cfg config.Config) http.Handler {
 		publicMapRepository: publicmap.NewRepository(db),
 		authRepository:      auth.NewRepository(db),
 		placesRepository:    places.NewRepository(db),
-		geocodingService: geocoding.NewService(
-			db,
-			cfg.NominatimBaseURL,
-			cfg.NominatimUserAgent,
-		),
+		geocodingService:    geocoding.NewService(db),
 	}
 
 	r := chi.NewRouter()

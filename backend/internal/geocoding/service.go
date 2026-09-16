@@ -15,6 +15,11 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
+const (
+	nominatimBaseURL   = "https://nominatim.openstreetmap.org"
+	nominatimUserAgent = "TravelMap/0.1 (https://github.com/vkirkizh/travel-map)"
+)
+
 var ErrNotFound = errors.New("geocoding result not found")
 
 type Service struct {
@@ -24,11 +29,11 @@ type Service struct {
 	client    *http.Client
 }
 
-func NewService(db *pgxpool.Pool, baseURL string, userAgent string) *Service {
+func NewService(db *pgxpool.Pool) *Service {
 	return &Service{
 		db:        db,
-		baseURL:   strings.TrimRight(baseURL, "/"),
-		userAgent: userAgent,
+		baseURL:   nominatimBaseURL,
+		userAgent: nominatimUserAgent,
 		client: &http.Client{
 			Timeout: 8 * time.Second,
 		},

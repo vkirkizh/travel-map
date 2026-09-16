@@ -299,7 +299,7 @@ func TestParseNominatimResponseRejectsInvalidCoordinates(t *testing.T) {
 }
 
 func TestResolveViaNominatimSendsRequiredSearchParameters(t *testing.T) {
-	service := NewService(nil, "https://nominatim.example", "TravelMap/test")
+	service := NewService(nil)
 	service.client.Transport = roundTripFunc(func(request *http.Request) (*http.Response, error) {
 		query := request.URL.Query()
 		want := map[string]string{
