@@ -1,19 +1,16 @@
 # Environment
 .env
+*.local
 
-# IDE / OS
+# IDE and OS
 .idea/
 .DS_Store
 
-# Dependencies
+# Dependencies and build artifacts
 node_modules/
-
-# Build
 dist/
-tmp/
-
-# Tests
 coverage/
+tmp/
 
 # Logs
 *.log
