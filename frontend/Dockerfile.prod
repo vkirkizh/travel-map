@@ -1,0 +1,21 @@
+FROM node:26-alpine AS builder
+
+WORKDIR /app
+
+COPY package*.json ./
+RUN npm ci
+
+COPY . .
+
+ARG VITE_CARTO_API_KEY
+ENV VITE_API_BASE_URL=""
+ENV VITE_CARTO_API_KEY=${VITE_CARTO_API_KEY}
+
+RUN test -n "${VITE_CARTO_API_KEY}" && npm run build
+
+FROM caddy:2.10.2-alpine
+
+COPY Caddyfile /etc/caddy/Caddyfile
+COPY --from=builder /app/dist /srv
+
+EXPOSE 80 443

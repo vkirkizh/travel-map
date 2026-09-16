@@ -52,7 +52,7 @@ func (s *Server) register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	setSessionCookie(w, sessionToken)
+	setSessionCookie(w, sessionToken, s.secureCookies)
 
 	writeJSON(w, http.StatusCreated, map[string]any{"user": user})
 }
@@ -86,7 +86,7 @@ func (s *Server) login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	setSessionCookie(w, sessionToken)
+	setSessionCookie(w, sessionToken, s.secureCookies)
 
 	writeJSON(w, http.StatusOK, map[string]any{"user": user})
 }
@@ -115,7 +115,7 @@ func (s *Server) logout(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	clearSessionCookie(w)
+	clearSessionCookie(w, s.secureCookies)
 
 	writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
 }

@@ -1,5 +1,6 @@
 # Environment
 .env
+.env.prod
 *.local
 
 # IDE and OS

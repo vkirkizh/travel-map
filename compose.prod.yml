@@ -1,0 +1,75 @@
+name: travel-map-prod
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: travel_map
+      POSTGRES_USER: travel_map
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U travel_map -d travel_map"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  migrate:
+    image: migrate/migrate:v4.18.3
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command:
+      - -path
+      - /migrations
+      - -database
+      - ${DATABASE_URL:?DATABASE_URL is required}
+      - up
+    volumes:
+      - ./backend/migrations:/migrations:ro
+
+  backend:
+    build:
+      context: ./backend
+    restart: unless-stopped
+    stop_grace_period: 15s
+    environment:
+      APP_ENV: production
+      HTTP_ADDR: :8080
+      DATABASE_URL: ${DATABASE_URL:?DATABASE_URL is required}
+      REGISTRATION_INVITE_CODE: ${REGISTRATION_INVITE_CODE:?REGISTRATION_INVITE_CODE is required}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8080/readyz"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
+
+  caddy:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.prod
+      args:
+        VITE_CARTO_API_KEY: ${VITE_CARTO_API_KEY:?VITE_CARTO_API_KEY is required}
+    restart: unless-stopped
+    environment:
+      SITE_ADDRESS: ${SITE_ADDRESS:-map.kirkizh.com}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      backend:
+        condition: service_healthy
+
+volumes:
+  postgres_data:
+  caddy_data:
+  caddy_config:

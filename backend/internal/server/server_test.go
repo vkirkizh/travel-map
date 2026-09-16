@@ -2,13 +2,64 @@ package server
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
 
 	"github.com/vkirkizh/travel-map/backend/internal/auth"
+	"github.com/vkirkizh/travel-map/backend/internal/config"
 )
+
+func TestCORSIsOnlyEnabledLocally(t *testing.T) {
+	tests := []struct {
+		name       string
+		appEnv     string
+		wantOrigin string
+	}{
+		{name: "local", appEnv: "local", wantOrigin: "http://localhost:5173"},
+		{name: "production", appEnv: "production", wantOrigin: ""},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			handler := New(nil, config.Config{AppEnv: test.appEnv})
+			request := httptest.NewRequest(http.MethodOptions, "/api/me", nil)
+			request.Header.Set("Origin", "http://localhost:5173")
+			request.Header.Set("Access-Control-Request-Method", http.MethodGet)
+			response := httptest.NewRecorder()
+
+			handler.ServeHTTP(response, request)
+
+			if got := response.Header().Get("Access-Control-Allow-Origin"); got != test.wantOrigin {
+				t.Errorf("Access-Control-Allow-Origin = %q, want %q", got, test.wantOrigin)
+			}
+		})
+	}
+}
+
+func TestSessionCookiesUseConfiguredSecureSetting(t *testing.T) {
+	for _, secure := range []bool{false, true} {
+		t.Run(fmt.Sprintf("secure_%t", secure), func(t *testing.T) {
+			setResponse := httptest.NewRecorder()
+			setSessionCookie(setResponse, "token", secure)
+
+			setCookies := setResponse.Result().Cookies()
+			if len(setCookies) != 1 || setCookies[0].Secure != secure {
+				t.Fatalf("set cookie Secure = %v, want %t", setCookies, secure)
+			}
+
+			clearResponse := httptest.NewRecorder()
+			clearSessionCookie(clearResponse, secure)
+
+			clearCookies := clearResponse.Result().Cookies()
+			if len(clearCookies) != 1 || clearCookies[0].Secure != secure {
+				t.Fatalf("clear cookie Secure = %v, want %t", clearCookies, secure)
+			}
+		})
+	}
+}
 
 func TestPlaceQueryLengthValidation(t *testing.T) {
 	tests := []struct {

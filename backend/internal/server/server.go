@@ -25,6 +25,7 @@ type Server struct {
 	placesRepository       *places.Repository
 	geocodingService       *geocoding.Service
 	registrationInviteCode string
+	secureCookies          bool
 }
 
 func New(db *pgxpool.Pool, cfg config.Config) http.Handler {
@@ -35,6 +36,7 @@ func New(db *pgxpool.Pool, cfg config.Config) http.Handler {
 		placesRepository:       places.NewRepository(db),
 		geocodingService:       geocoding.NewService(db),
 		registrationInviteCode: cfg.RegistrationInviteCode,
+		secureCookies:          cfg.SecureCookies,
 	}
 
 	r := chi.NewRouter()
@@ -44,28 +46,30 @@ func New(db *pgxpool.Pool, cfg config.Config) http.Handler {
 	r.Use(middleware.Recoverer)
 	r.Use(middleware.Logger)
 
-	r.Use(cors.Handler(cors.Options{
-		AllowedOrigins: []string{
-			"http://localhost:5173",
-			"http://localhost:3000",
-		},
-		AllowedMethods: []string{
-			http.MethodGet,
-			http.MethodPost,
-			http.MethodPut,
-			http.MethodPatch,
-			http.MethodDelete,
-			http.MethodOptions,
-		},
-		AllowedHeaders: []string{
-			"Accept",
-			"Authorization",
-			"Content-Type",
-			"X-CSRF-Token",
-		},
-		AllowCredentials: true,
-		MaxAge:           300,
-	}))
+	if cfg.AppEnv == "local" {
+		r.Use(cors.Handler(cors.Options{
+			AllowedOrigins: []string{
+				"http://localhost:5173",
+				"http://localhost:3000",
+			},
+			AllowedMethods: []string{
+				http.MethodGet,
+				http.MethodPost,
+				http.MethodPut,
+				http.MethodPatch,
+				http.MethodDelete,
+				http.MethodOptions,
+			},
+			AllowedHeaders: []string{
+				"Accept",
+				"Authorization",
+				"Content-Type",
+				"X-CSRF-Token",
+			},
+			AllowCredentials: true,
+			MaxAge:           300,
+		}))
+	}
 
 	r.Get("/healthz", s.healthz)
 	r.Get("/readyz", s.readyz)

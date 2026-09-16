@@ -80,12 +80,6 @@ make check
 
 Travel Map uses Nominatim for geocoding during MVP development.
 The backend caches geocoding results in PostgreSQL to avoid repeated external API calls for the same normalized query.
-
-Relevant tables:
-- `geocoding_cache`
-- `countries`
-- `places`
-
 Countries are added or updated automatically from successful geocoding results before places are stored.
 
 ## Author

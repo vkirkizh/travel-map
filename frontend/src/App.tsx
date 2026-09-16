@@ -2,7 +2,7 @@ import {LandingPage} from "./pages/LandingPage";
 import {PrivateAppPage} from "./pages/PrivateAppPage";
 import {PublicMapPage} from "./pages/PublicMapPage";
 
-const apiBaseUrl = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8080";
+const apiBaseUrl = import.meta.env.VITE_API_BASE_URL ?? "";
 
 function App() {
   const pathname = window.location.pathname;
