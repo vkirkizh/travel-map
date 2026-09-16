@@ -1,7 +1,6 @@
 package server
 
 import (
-	"net/mail"
 	"strings"
 
 	"github.com/vkirkizh/travel-map/backend/internal/auth"
@@ -48,7 +47,7 @@ func validateRegisterRequest(request registerRequest) map[string]string {
 
 	if email == "" {
 		errs["email"] = "Email is required."
-	} else if _, err := mail.ParseAddress(email); err != nil {
+	} else if !auth.IsValidEmail(email) {
 		errs["email"] = "Email is invalid."
 	}
 
@@ -75,7 +74,7 @@ func validateLoginRequest(request loginRequest) map[string]string {
 
 	if email == "" {
 		errs["email"] = "Email is required."
-	} else if _, err := mail.ParseAddress(email); err != nil {
+	} else if !auth.IsValidEmail(email) {
 		errs["email"] = "Email is invalid."
 	}
 
@@ -99,7 +98,7 @@ func validateUpdateMeRequest(request updateMeRequest) map[string]string {
 
 	if email == "" {
 		errs["email"] = "Email is required."
-	} else if _, err := mail.ParseAddress(email); err != nil {
+	} else if !auth.IsValidEmail(email) {
 		errs["email"] = "Email is invalid."
 	}
 
