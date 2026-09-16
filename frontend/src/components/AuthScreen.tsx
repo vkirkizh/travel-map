@@ -36,7 +36,7 @@ export function AuthScreen({ apiBaseUrl, onAuthenticated }: Props) {
         return "Please check all fields and try again.";
 
       case "validation failed":
-        return "Please check the highlighted fields and try again.";
+        return "Please check your details and try again.";
 
       default:
         return "Something went wrong. Please try again.";
@@ -141,13 +141,15 @@ export function AuthScreen({ apiBaseUrl, onAuthenticated }: Props) {
 
         {error && <div className="form-error">{error}</div>}
 
-        <button className="primary-button"  type="submit">
-          {mode === "login" ? "Login" : "Register"}
-        </button>
+        <div className="dashboard-actions">
+          <button className="primary-button"  type="submit">
+            {mode === "login" ? "Login" : "Register"}
+          </button>
 
-        <a className="secondary-link" href="/valery/">
-          View public demo map
-        </a>
+          <a className="secondary-link" href="/valery/">
+            View public demo map
+          </a>
+        </div>
       </form>
     </div>
   );

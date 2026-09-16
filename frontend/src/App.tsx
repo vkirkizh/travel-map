@@ -70,7 +70,7 @@ function LandingPage() {
           <a href="/valery/" className="landing-link">
             View demo map
           </a>
-          <a href="/login" className="landing-link landing-link-secondary">
+          <a href="/app/" className="landing-link landing-link-secondary">
             Log In / Sign Up
           </a>
         </div>
