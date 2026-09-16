@@ -73,8 +73,7 @@ curl http://localhost:8080/readyz
 
 Development checks:
 ```bash
-make backend-lint
-make backend-test
+make check
 ```
 
 ## Geocoding

@@ -1,4 +1,4 @@
-.PHONY: up down logs dev-env migrate-up migrate-down seed-dev backend-run backend-test backend-lint frontend-run docker-build restart
+.PHONY: up down logs dev-env migrate-up migrate-down seed-dev backend-run backend-test backend-lint frontend-run frontend-lint frontend-build check docker-build restart
 
 up:
 	docker compose up -d
@@ -32,6 +32,14 @@ backend-lint:
 
 frontend-run:
 	cd frontend && npm run dev
+
+frontend-lint:
+	cd frontend && npm run lint
+
+frontend-build:
+	cd frontend && npm run build
+
+check: backend-test backend-lint frontend-lint frontend-build
 
 docker-build:
 	docker compose build
