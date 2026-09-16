@@ -1,12 +1,5 @@
 import {useState} from "react";
-
-type User = {
-  id: string;
-  username: string;
-  email: string;
-  display_name: string;
-  avatar_url: string;
-};
+import type {User} from "../types";
 
 type Props = {
   apiBaseUrl: string;
@@ -142,7 +135,7 @@ export function AuthScreen({ apiBaseUrl, onAuthenticated }: Props) {
         {error && <div className="form-error">{error}</div>}
 
         <div className="dashboard-actions">
-          <button className="primary-button"  type="submit">
+          <button className="primary-button" type="submit">
             {mode === "login" ? "Login" : "Register"}
           </button>
 
@@ -154,5 +147,3 @@ export function AuthScreen({ apiBaseUrl, onAuthenticated }: Props) {
     </div>
   );
 }
-
-export type { User };

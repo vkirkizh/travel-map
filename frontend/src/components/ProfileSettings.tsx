@@ -1,10 +1,11 @@
 import {useState} from "react";
-import type {User} from "./AuthScreen";
+import type {User} from "../types";
 
 type Props = {
   apiBaseUrl: string;
   user: User;
   onUserUpdated: (user: User) => void;
+  onUnauthorized: () => void;
 };
 
 function getSettingsErrorMessage(error: string): string {
@@ -18,7 +19,12 @@ function getSettingsErrorMessage(error: string): string {
   }
 }
 
-export function ProfileSettings({ apiBaseUrl, user, onUserUpdated }: Props) {
+export function ProfileSettings({
+  apiBaseUrl,
+  user,
+  onUserUpdated,
+  onUnauthorized,
+}: Props) {
   const [displayName, setDisplayName] = useState(user.display_name);
   const [email, setEmail] = useState(user.email);
   const [currentPassword, setCurrentPassword] = useState("");
@@ -48,6 +54,11 @@ export function ProfileSettings({ apiBaseUrl, user, onUserUpdated }: Props) {
           new_password: newPassword || null,
         }),
       });
+
+      if (response.status === 401) {
+        onUnauthorized();
+        return;
+      }
 
       const payload = await response.json();
 

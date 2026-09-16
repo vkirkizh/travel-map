@@ -1,16 +1,9 @@
 import {useEffect, useState} from "react";
-
-type Place = {
-  id: string;
-  title: string;
-  query: string;
-  country_code: string;
-  lat: number;
-  lng: number;
-};
+import type {PrivatePlace} from "../types";
 
 type Props = {
   apiBaseUrl: string;
+  onUnauthorized: () => void;
 };
 
 function getPlaceErrorMessage(error: string): string {
@@ -26,8 +19,8 @@ function getPlaceErrorMessage(error: string): string {
   }
 }
 
-export function PlacesManager({ apiBaseUrl }: Props) {
-  const [places, setPlaces] = useState<Place[]>([]);
+export function PlacesManager({apiBaseUrl, onUnauthorized}: Props) {
+  const [places, setPlaces] = useState<PrivatePlace[]>([]);
   const [query, setQuery] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -38,6 +31,11 @@ export function PlacesManager({ apiBaseUrl }: Props) {
       const response = await fetch(`${apiBaseUrl}/api/places`, {
         credentials: "include",
       });
+
+      if (response.status === 401) {
+        onUnauthorized();
+        return;
+      }
 
       const payload = await response.json();
 
@@ -52,7 +50,7 @@ export function PlacesManager({ apiBaseUrl }: Props) {
     loadPlaces()
       .catch(() => setError("Unable to load places."))
       .finally(() => setIsLoading(false));
-  }, [apiBaseUrl]);
+  }, [apiBaseUrl, onUnauthorized]);
 
   async function addPlace(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -75,6 +73,11 @@ export function PlacesManager({ apiBaseUrl }: Props) {
         },
         body: JSON.stringify({ query }),
       });
+
+      if (response.status === 401) {
+        onUnauthorized();
+        return;
+      }
 
       const payload = await response.json();
 
@@ -103,6 +106,11 @@ export function PlacesManager({ apiBaseUrl }: Props) {
         method: "DELETE",
         credentials: "include",
       });
+
+      if (response.status === 401) {
+        onUnauthorized();
+        return;
+      }
 
       if (!response.ok) {
         const payload = await response.json();
