@@ -3,6 +3,7 @@ package server
 import (
 	"encoding/json"
 	"errors"
+	"log/slog"
 	"net/http"
 	"net/mail"
 	"strings"
@@ -156,6 +157,10 @@ func (s *Server) register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	request.Username = strings.TrimSpace(request.Username)
+	request.Email = auth.NormalizeEmail(request.Email)
+	request.DisplayName = strings.TrimSpace(request.DisplayName)
+
 	validationErrors := validateRegisterRequest(request)
 	if len(validationErrors) > 0 {
 		writeJSON(w, http.StatusBadRequest, map[string]any{
@@ -164,10 +169,6 @@ func (s *Server) register(w http.ResponseWriter, r *http.Request) {
 		})
 		return
 	}
-
-	request.Username = strings.TrimSpace(request.Username)
-	request.Email = strings.TrimSpace(request.Email)
-	request.DisplayName = strings.TrimSpace(request.DisplayName)
 
 	user, sessionToken, err := s.authRepository.Register(
 		r.Context(),
@@ -198,6 +199,8 @@ func (s *Server) login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	request.Email = auth.NormalizeEmail(request.Email)
+
 	validationErrors := validateLoginRequest(request)
 	if len(validationErrors) > 0 {
 		writeJSON(w, http.StatusBadRequest, map[string]any{
@@ -206,8 +209,6 @@ func (s *Server) login(w http.ResponseWriter, r *http.Request) {
 		})
 		return
 	}
-
-	request.Email = strings.TrimSpace(request.Email)
 
 	user, sessionToken, err := s.authRepository.Login(r.Context(), request.Email, request.Password)
 	if errors.Is(err, auth.ErrInvalidCredentials) {
@@ -226,8 +227,26 @@ func (s *Server) login(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) logout(w http.ResponseWriter, r *http.Request) {
 	cookie, err := r.Cookie("travel_map_session")
+	if err != nil && !errors.Is(err, http.ErrNoCookie) {
+		slog.Error(
+			"failed to read session cookie",
+			"error", err,
+			"request_id", middleware.GetReqID(r.Context()),
+		)
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "internal server error"})
+		return
+	}
+
 	if err == nil {
-		_ = s.authRepository.Logout(r.Context(), cookie.Value)
+		if err := s.authRepository.Logout(r.Context(), cookie.Value); err != nil {
+			slog.Error(
+				"failed to delete session",
+				"error", err,
+				"request_id", middleware.GetReqID(r.Context()),
+			)
+			writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "internal server error"})
+			return
+		}
 	}
 
 	clearSessionCookie(w)
@@ -236,9 +255,9 @@ func (s *Server) logout(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) me(w http.ResponseWriter, r *http.Request) {
-	user, ok := s.currentUser(r)
-	if !ok {
-		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "unauthorized"})
+	user, err := s.currentUser(r)
+	if err != nil {
+		writeCurrentUserError(w, r, err)
 		return
 	}
 
@@ -246,9 +265,9 @@ func (s *Server) me(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) updateMe(w http.ResponseWriter, r *http.Request) {
-	user, ok := s.currentUser(r)
-	if !ok {
-		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "unauthorized"})
+	user, err := s.currentUser(r)
+	if err != nil {
+		writeCurrentUserError(w, r, err)
 		return
 	}
 
@@ -259,7 +278,7 @@ func (s *Server) updateMe(w http.ResponseWriter, r *http.Request) {
 	}
 
 	request.DisplayName = strings.TrimSpace(request.DisplayName)
-	request.Email = strings.TrimSpace(request.Email)
+	request.Email = auth.NormalizeEmail(request.Email)
 
 	validationErrors := validateUpdateMeRequest(request)
 	if len(validationErrors) > 0 {
@@ -270,8 +289,8 @@ func (s *Server) updateMe(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	currentPassword := normalizeOptionalString(request.CurrentPassword)
-	newPassword := normalizeOptionalString(request.NewPassword)
+	currentPassword := optionalPassword(request.CurrentPassword)
+	newPassword := optionalPassword(request.NewPassword)
 
 	updatedUser, err := s.authRepository.UpdateProfile(r.Context(), auth.UpdateProfileInput{
 		UserID:          user.ID,
@@ -302,9 +321,9 @@ func (s *Server) updateMe(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) listPlaces(w http.ResponseWriter, r *http.Request) {
-	user, ok := s.currentUser(r)
-	if !ok {
-		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "unauthorized"})
+	user, err := s.currentUser(r)
+	if err != nil {
+		writeCurrentUserError(w, r, err)
 		return
 	}
 
@@ -318,9 +337,9 @@ func (s *Server) listPlaces(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) createPlace(w http.ResponseWriter, r *http.Request) {
-	user, ok := s.currentUser(r)
-	if !ok {
-		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "unauthorized"})
+	user, err := s.currentUser(r)
+	if err != nil {
+		writeCurrentUserError(w, r, err)
 		return
 	}
 
@@ -368,9 +387,9 @@ func (s *Server) createPlace(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) deletePlace(w http.ResponseWriter, r *http.Request) {
-	user, ok := s.currentUser(r)
-	if !ok {
-		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "unauthorized"})
+	user, err := s.currentUser(r)
+	if err != nil {
+		writeCurrentUserError(w, r, err)
 		return
 	}
 
@@ -388,26 +407,39 @@ func (s *Server) deletePlace(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
 }
 
-func (s *Server) currentUser(r *http.Request) (*auth.User, bool) {
+func (s *Server) currentUser(r *http.Request) (*auth.User, error) {
 	cookie, err := r.Cookie("travel_map_session")
+	if errors.Is(err, http.ErrNoCookie) {
+		return nil, auth.ErrUnauthorized
+	}
 	if err != nil {
-		return nil, false
+		return nil, err
 	}
 
 	user, err := s.authRepository.CurrentUser(r.Context(), cookie.Value)
 	if err != nil {
-		return nil, false
+		return nil, err
 	}
 
-	return user, true
+	return user, nil
+}
+
+func writeCurrentUserError(w http.ResponseWriter, r *http.Request, err error) {
+	if errors.Is(err, auth.ErrUnauthorized) {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "unauthorized"})
+		return
+	}
+
+	slog.Error("failed to get current user", "error", err, "request_id", middleware.GetReqID(r.Context()))
+	writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "internal server error"})
 }
 
 func validateRegisterRequest(request registerRequest) map[string]string {
 	errs := make(map[string]string)
 
 	username := strings.TrimSpace(request.Username)
-	email := strings.TrimSpace(request.Email)
-	password := strings.TrimSpace(request.Password)
+	email := auth.NormalizeEmail(request.Email)
+	password := request.Password
 	displayName := strings.TrimSpace(request.DisplayName)
 
 	if username == "" {
@@ -442,8 +474,8 @@ func validateRegisterRequest(request registerRequest) map[string]string {
 func validateLoginRequest(request loginRequest) map[string]string {
 	errs := make(map[string]string)
 
-	email := strings.TrimSpace(request.Email)
-	password := strings.TrimSpace(request.Password)
+	email := auth.NormalizeEmail(request.Email)
+	password := request.Password
 
 	if email == "" {
 		errs["email"] = "Email is required."
@@ -461,20 +493,22 @@ func validateLoginRequest(request loginRequest) map[string]string {
 func validateUpdateMeRequest(request updateMeRequest) map[string]string {
 	errs := make(map[string]string)
 
+	email := auth.NormalizeEmail(request.Email)
+
 	if request.DisplayName == "" {
 		errs["display_name"] = "Display name is required."
 	} else if len(request.DisplayName) > 80 {
 		errs["display_name"] = "Display name must be at most 80 characters."
 	}
 
-	if request.Email == "" {
+	if email == "" {
 		errs["email"] = "Email is required."
-	} else if _, err := mail.ParseAddress(request.Email); err != nil {
+	} else if _, err := mail.ParseAddress(email); err != nil {
 		errs["email"] = "Email is invalid."
 	}
 
-	newPassword := normalizeOptionalString(request.NewPassword)
-	currentPassword := normalizeOptionalString(request.CurrentPassword)
+	newPassword := optionalPassword(request.NewPassword)
+	currentPassword := optionalPassword(request.CurrentPassword)
 
 	if newPassword != nil {
 		if len(*newPassword) < 6 {
@@ -489,15 +523,11 @@ func validateUpdateMeRequest(request updateMeRequest) map[string]string {
 	return errs
 }
 
-func normalizeOptionalString(value *string) *string {
-	if value == nil {
+func optionalPassword(value *string) *string {
+	if value == nil || *value == "" {
 		return nil
 	}
-	normalized := strings.TrimSpace(*value)
-	if normalized == "" {
-		return nil
-	}
-	return &normalized
+	return value
 }
 
 func setSessionCookie(w http.ResponseWriter, token string) {

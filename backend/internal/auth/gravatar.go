@@ -3,11 +3,10 @@ package auth
 import (
 	"crypto/md5"
 	"encoding/hex"
-	"strings"
 )
 
 func GravatarURL(email string) string {
-	normalized := strings.ToLower(strings.TrimSpace(email))
+	normalized := NormalizeEmail(email)
 
 	hash := md5.Sum([]byte(normalized))
 
