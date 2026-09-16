@@ -74,6 +74,31 @@ func TestRegisterUsernameValidation(t *testing.T) {
 	}
 }
 
+func TestIsValidInviteCode(t *testing.T) {
+	tests := []struct {
+		name      string
+		submitted string
+		expected  string
+		want      bool
+	}{
+		{name: "matching code", submitted: "my-code", expected: "my-code", want: true},
+		{name: "incorrect code", submitted: "wrong-code", expected: "my-code", want: false},
+		{name: "missing submitted code", submitted: "", expected: "my-code", want: false},
+		{name: "empty configured code", submitted: "my-code", expected: "", want: false},
+		{name: "whitespace configured code", submitted: "my-code", expected: "   ", want: false},
+		{name: "surrounding whitespace", submitted: "  my-code\t", expected: "\nmy-code ", want: true},
+		{name: "case sensitive", submitted: "MY-CODE", expected: "my-code", want: false},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			if got := isValidInviteCode(test.submitted, test.expected); got != test.want {
+				t.Errorf("isValidInviteCode() = %t, want %t", got, test.want)
+			}
+		})
+	}
+}
+
 func TestWriteCurrentUserError(t *testing.T) {
 	tests := []struct {
 		name       string

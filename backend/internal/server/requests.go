@@ -1,6 +1,7 @@
 package server
 
 import (
+	"crypto/subtle"
 	"strings"
 
 	"github.com/vkirkizh/travel-map/backend/internal/auth"
@@ -11,6 +12,7 @@ type registerRequest struct {
 	Email       string `json:"email"`
 	Password    string `json:"password"`
 	DisplayName string `json:"display_name"`
+	InviteCode  string `json:"invite_code"`
 }
 
 type loginRequest struct {
@@ -62,6 +64,17 @@ func validateRegisterRequest(request registerRequest) map[string]string {
 	}
 
 	return errs
+}
+
+func isValidInviteCode(submitted string, expected string) bool {
+	submitted = strings.TrimSpace(submitted)
+	expected = strings.TrimSpace(expected)
+
+	if submitted == "" || expected == "" {
+		return false
+	}
+
+	return subtle.ConstantTimeCompare([]byte(submitted), []byte(expected)) == 1
 }
 
 func validateLoginRequest(request loginRequest) map[string]string {

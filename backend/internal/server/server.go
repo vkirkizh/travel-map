@@ -19,20 +19,22 @@ import (
 )
 
 type Server struct {
-	db                  *pgxpool.Pool
-	publicMapRepository *publicmap.Repository
-	authRepository      *auth.Repository
-	placesRepository    *places.Repository
-	geocodingService    *geocoding.Service
+	db                     *pgxpool.Pool
+	publicMapRepository    *publicmap.Repository
+	authRepository         *auth.Repository
+	placesRepository       *places.Repository
+	geocodingService       *geocoding.Service
+	registrationInviteCode string
 }
 
 func New(db *pgxpool.Pool, cfg config.Config) http.Handler {
 	s := &Server{
-		db:                  db,
-		publicMapRepository: publicmap.NewRepository(db),
-		authRepository:      auth.NewRepository(db),
-		placesRepository:    places.NewRepository(db),
-		geocodingService:    geocoding.NewService(db),
+		db:                     db,
+		publicMapRepository:    publicmap.NewRepository(db),
+		authRepository:         auth.NewRepository(db),
+		placesRepository:       places.NewRepository(db),
+		geocodingService:       geocoding.NewService(db),
+		registrationInviteCode: cfg.RegistrationInviteCode,
 	}
 
 	r := chi.NewRouter()

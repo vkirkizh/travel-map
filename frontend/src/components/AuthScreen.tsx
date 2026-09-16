@@ -13,6 +13,7 @@ export function AuthScreen({ apiBaseUrl, onAuthenticated }: Props) {
   const [password, setPassword] = useState("");
   const [username, setUsername] = useState("");
   const [displayName, setDisplayName] = useState("");
+  const [inviteCode, setInviteCode] = useState("");
   const [error, setError] = useState<string | null>(null);
 
   function getErrorMessage(error: string): string {
@@ -49,7 +50,7 @@ export function AuthScreen({ apiBaseUrl, onAuthenticated }: Props) {
       const body =
         mode === "login"
           ? { email, password }
-          : { username, email, password, display_name: displayName };
+          : { username, email, password, display_name: displayName, invite_code: inviteCode };
 
       const response = await fetch(url, {
         method: "POST",
@@ -136,6 +137,22 @@ export function AuthScreen({ apiBaseUrl, onAuthenticated }: Props) {
             onChange={(e) => setPassword(e.target.value)}
           />
         </label>
+
+        {mode === "register" && (
+          <>
+            <label>
+              Invite code
+              <input
+                type="password"
+                autoComplete="off"
+                value={inviteCode}
+                onChange={(e) => setInviteCode(e.target.value)}
+              />
+            </label>
+
+            <div className="hint">Registration requires an invite code.</div>
+          </>
+        )}
 
         {error && <div className="auth-error">{error}</div>}
 

@@ -25,6 +25,9 @@ func (s *Server) register(w http.ResponseWriter, r *http.Request) {
 	request.DisplayName = strings.TrimSpace(request.DisplayName)
 
 	validationErrors := validateRegisterRequest(request)
+	if !isValidInviteCode(request.InviteCode, s.registrationInviteCode) {
+		validationErrors["invite_code"] = "Invite code is invalid."
+	}
 	if len(validationErrors) > 0 {
 		writeJSON(w, http.StatusBadRequest, map[string]any{
 			"error":  "validation failed",

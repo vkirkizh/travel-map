@@ -1,11 +1,16 @@
 package config
 
-import "os"
+import (
+	"os"
+	"strings"
+)
 
 type Config struct {
 	AppEnv      string
 	HTTPAddr    string
 	DatabaseURL string
+
+	RegistrationInviteCode string
 }
 
 func Load() Config {
@@ -13,6 +18,8 @@ func Load() Config {
 		AppEnv:      getEnv("APP_ENV", "local"),
 		HTTPAddr:    getEnv("HTTP_ADDR", ":8080"),
 		DatabaseURL: getEnv("DATABASE_URL", ""),
+
+		RegistrationInviteCode: strings.TrimSpace(getEnv("REGISTRATION_INVITE_CODE", "")),
 	}
 }
 
