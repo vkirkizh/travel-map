@@ -274,7 +274,7 @@ func (s *Server) updateMe(w http.ResponseWriter, r *http.Request) {
 	newPassword := normalizeOptionalString(request.NewPassword)
 
 	updatedUser, err := s.authRepository.UpdateProfile(r.Context(), auth.UpdateProfileInput{
-		UserID:          user.ID.String(),
+		UserID:          user.ID,
 		DisplayName:     request.DisplayName,
 		Email:           request.Email,
 		CurrentPassword: currentPassword,

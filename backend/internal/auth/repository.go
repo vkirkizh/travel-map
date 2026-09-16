@@ -35,7 +35,7 @@ type sessionCreator interface {
 }
 
 type UpdateProfileInput struct {
-	UserID          string
+	UserID          uuid.UUID
 	DisplayName     string
 	Email           string
 	CurrentPassword *string
@@ -76,7 +76,7 @@ func (r *Repository) Register(ctx context.Context, username, email, password, di
 		return nil, "", err
 	}
 
-	sessionToken, err := createSession(ctx, tx, id.String())
+	sessionToken, err := createSession(ctx, tx, id)
 	if err != nil {
 		return nil, "", err
 	}
@@ -120,7 +120,7 @@ func (r *Repository) Login(ctx context.Context, email, password string) (*User, 
 		return nil, "", ErrInvalidCredentials
 	}
 
-	sessionToken, err := createSession(ctx, r.db, id.String())
+	sessionToken, err := createSession(ctx, r.db, id)
 	if err != nil {
 		return nil, "", err
 	}
@@ -250,7 +250,7 @@ func (r *Repository) UpdateProfile(ctx context.Context, input UpdateProfileInput
 	return &user, nil
 }
 
-func createSession(ctx context.Context, db sessionCreator, userID string) (string, error) {
+func createSession(ctx context.Context, db sessionCreator, userID uuid.UUID) (string, error) {
 	token, err := randomToken(32)
 	if err != nil {
 		return "", err

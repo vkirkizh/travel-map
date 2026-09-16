@@ -20,7 +20,7 @@ func (r *Repository) ListByUserID(ctx context.Context, userID uuid.UUID) ([]Plac
 		SELECT id, title, query, country_code, lat, lng
 		FROM places
 		WHERE user_id = $1
-		ORDER BY created_at ASC
+		ORDER BY created_at
 	`, userID)
 	if err != nil {
 		return nil, err

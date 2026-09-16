@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"math"
 	"net/http"
@@ -42,7 +43,6 @@ func NewService(db *pgxpool.Pool) *Service {
 
 func (s *Service) Resolve(ctx context.Context, query string) (*Result, error) {
 	normalized := normalizeQuery(query)
-
 	if normalized == "" {
 		return nil, ErrNotFound
 	}
@@ -119,7 +119,10 @@ func (s *Service) resolveViaNominatim(ctx context.Context, originalQuery string)
 	}
 
 	if response.StatusCode < 200 || response.StatusCode >= 300 {
-		return nil, errors.New("nominatim request failed")
+		return nil, fmt.Errorf(
+			"nominatim request failed: status %d",
+			response.StatusCode,
+		)
 	}
 
 	return parseNominatimResponse(response.Body, originalQuery)
@@ -162,13 +165,10 @@ func normalizeNominatimItem(item nominatimResponseItem, query string) (*Result, 
 	switch countryName {
 	case "Abkhazia":
 		countryCode = "AB"
-		countryName = "Abkhazia"
 	case "South Ossetia":
 		countryCode = "OS"
-		countryName = "South Ossetia"
 	case "Northern Cyprus":
 		countryCode = "NC"
-		countryName = "Northern Cyprus"
 	default:
 		switch strings.TrimSpace(item.Address.ISO3166Level3) {
 		case "CN-HK":

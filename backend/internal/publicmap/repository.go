@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
@@ -22,7 +23,7 @@ func NewRepository(db *pgxpool.Pool) *Repository {
 
 func (r *Repository) GetByUsername(ctx context.Context, username string) (*MapResponse, error) {
 	var (
-		userID string
+		userID uuid.UUID
 		email  string
 	)
 
@@ -62,12 +63,12 @@ func (r *Repository) GetByUsername(ctx context.Context, username string) (*MapRe
 	return response, nil
 }
 
-func (r *Repository) getPlaces(ctx context.Context, userID string) ([]Place, error) {
+func (r *Repository) getPlaces(ctx context.Context, userID uuid.UUID) ([]Place, error) {
 	rows, err := r.db.Query(ctx, `
 		SELECT id, title, country_code, lat, lng
 		FROM places
 		WHERE user_id = $1
-		ORDER BY created_at ASC
+		ORDER BY created_at
 	`, userID)
 	if err != nil {
 		return nil, err
