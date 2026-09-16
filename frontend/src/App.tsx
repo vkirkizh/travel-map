@@ -1,5 +1,5 @@
 import {useEffect, useState} from "react";
-import {CircleMarker, MapContainer, Popup, TileLayer, useMap} from "react-leaflet";
+import {CircleMarker, MapContainer, Popup, TileLayer, AttributionControl, useMap} from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import "./App.css";
@@ -66,12 +66,14 @@ function LandingPage() {
         <p>
           Created by Valery Kirkizh: <a href="mailto:valery@kirkizh.com">Email</a> &bull;&nbsp;<a href="https://www.linkedin.com/in/vkirkizh/" rel="me">LinkedIn</a> &bull;&nbsp;<a href="https://github.com/vkirkizh" rel="me">GitHub</a>
         </p>
-        <a href="/valery/" className="landing-link">
-          View demo map
-        </a>
-        <a href="/app/" className="landing-link">
-          Log In / Sign Up
-        </a>
+        <div className="landing-actions">
+          <a href="/valery/" className="landing-link">
+            View demo map
+          </a>
+          <a href="/login" className="landing-link landing-link-secondary">
+            Log In / Sign Up
+          </a>
+        </div>
       </div>
     </div>
   );
@@ -113,11 +115,18 @@ function PublicMapPage({ username }: { username: string }) {
       <MapContainer
         center={[50.5, 10.5]}
         zoom={5}
+        minZoom={2}
+        maxZoom={18}
         scrollWheelZoom
         className="map"
+        attributionControl={false}
       >
+        <AttributionControl
+          prefix='<a href="https://github.com/vkirkizh/travel-map" target="_blank">Travel Map</a> | <a href="https://leafletjs.com" target="_blank" rel="nofollow">Leaflet</a>'
+        />
+
         <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+          attribution='<a href="https://www.openstreetmap.org/copyright" target="_blank" rel="nofollow">OpenStreetMap</a>'
           url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
         />
 
