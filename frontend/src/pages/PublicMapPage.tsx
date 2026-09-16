@@ -9,6 +9,7 @@ import {
   useMap,
 } from "react-leaflet";
 import type {PublicMapResponse} from "../types";
+import "./PublicMapPage.css";
 
 type Props = {
   apiBaseUrl: string;
@@ -41,22 +42,26 @@ export function PublicMapPage({apiBaseUrl, username}: Props) {
   }, [apiBaseUrl, username]);
 
   if (error) {
-    return <div className="error">Failed to load Travel Map: {error}</div>;
+    return (
+      <div className="public-map-status public-map-status-error">
+        Failed to load Travel Map: {error}
+      </div>
+    );
   }
 
   if (!data) {
-    return <div className="loading">Loading Travel Map...</div>;
+    return <div className="public-map-status">Loading Travel Map...</div>;
   }
 
   return (
-    <div className="page">
+    <div className="public-map-page">
       <MapContainer
         center={[50.5, 10.5]}
         zoom={5}
         minZoom={2}
         maxZoom={18}
         scrollWheelZoom
-        className="map"
+        className="public-map-canvas"
         attributionControl={false}
       >
         <AttributionControl
@@ -86,8 +91,8 @@ export function PublicMapPage({apiBaseUrl, username}: Props) {
         <FitMapBounds data={data} />
       </MapContainer>
 
-      <div className="profile-card">
-        <div className="avatar">
+      <div className="public-profile-card">
+        <div className="public-profile-avatar">
           {data.user.avatar_url ? (
             <img src={data.user.avatar_url} alt={data.user.display_name} />
           ) : (
@@ -95,12 +100,12 @@ export function PublicMapPage({apiBaseUrl, username}: Props) {
           )}
         </div>
         <div>
-          <div className="display-name">{data.user.display_name}</div>
-          <div className="username">@{data.user.username}</div>
+          <div className="public-profile-display-name">{data.user.display_name}</div>
+          <div className="public-profile-username">@{data.user.username}</div>
         </div>
       </div>
 
-      <div className="stats-card">
+      <div className="public-stats-card">
         <div>
           <strong>{data.stats.countries_visited}</strong>
           <span>countries</span>

@@ -1,0 +1,9 @@
+.private-app-status {
+  display: grid;
+  min-height: 100vh;
+  place-items: center;
+}
+
+.private-app-status-error {
+  color: #991b1b;
+}

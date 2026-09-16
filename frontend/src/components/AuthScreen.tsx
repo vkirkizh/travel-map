@@ -1,5 +1,6 @@
 import {useState} from "react";
 import type {User} from "../types";
+import "./AuthScreen.css";
 
 type Props = {
   apiBaseUrl: string;
@@ -73,7 +74,7 @@ export function AuthScreen({ apiBaseUrl, onAuthenticated }: Props) {
   }
 
   return (
-    <div className="app-page">
+    <div className="auth-page">
       <form
         className="auth-card"
         onSubmit={(e) => {
@@ -81,7 +82,7 @@ export function AuthScreen({ apiBaseUrl, onAuthenticated }: Props) {
           void submit();
         }}
       >
-        <div className="landing-eyebrow">Travel Map App</div>
+        <div className="auth-eyebrow">Travel Map App</div>
         <h1>{mode === "login" ? "Welcome back" : "Create your account"}</h1>
 
         <div className="auth-tabs">
@@ -132,14 +133,14 @@ export function AuthScreen({ apiBaseUrl, onAuthenticated }: Props) {
           />
         </label>
 
-        {error && <div className="form-error">{error}</div>}
+        {error && <div className="auth-error">{error}</div>}
 
-        <div className="dashboard-actions">
-          <button className="primary-button" type="submit">
+        <div className="auth-actions">
+          <button className="auth-submit" type="submit">
             {mode === "login" ? "Login" : "Register"}
           </button>
 
-          <a className="secondary-link" href="/valery/">
+          <a className="auth-demo-link" href="/valery/">
             View public demo map
           </a>
         </div>

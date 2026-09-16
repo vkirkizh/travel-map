@@ -1,5 +1,3 @@
-import "leaflet/dist/leaflet.css";
-import "./App.css";
 import {LandingPage} from "./pages/LandingPage";
 import {PrivateAppPage} from "./pages/PrivateAppPage";
 import {PublicMapPage} from "./pages/PublicMapPage";

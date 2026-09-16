@@ -1,0 +1,136 @@
+.places-section {
+  margin-top: 32px;
+  padding-top: 28px;
+  border-top: 1px solid #e2e8f0;
+}
+
+.places-header h2 {
+  margin: 0;
+  color: #0f172a;
+  font-size: 22px;
+  letter-spacing: -0.03em;
+}
+
+.places-header p {
+  margin: 6px 0 0;
+  color: #64748b;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.places-form {
+  display: flex;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.places-form input {
+  box-sizing: border-box;
+  flex: 1;
+  min-width: 0;
+  border: 1px solid #cbd5e1;
+  border-radius: 14px;
+  padding: 12px 14px;
+  color: #0f172a;
+  font: inherit;
+}
+
+.places-form input:focus {
+  border-color: #2563eb;
+  outline: none;
+  box-shadow: 0 0 0 4px rgb(37 99 235 / 12%);
+}
+
+.places-form button,
+.places-row button {
+  border: none;
+  border-radius: 14px;
+  padding: 12px 16px;
+  background: #0f172a;
+  color: white;
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.places-form button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.places-error {
+  margin-top: 16px;
+  border-radius: 14px;
+  padding: 12px 14px;
+  background: #fee2e2;
+  color: #991b1b;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.places-list {
+  display: grid;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.places-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px;
+  border: 1px solid #e2e8f0;
+  border-radius: 18px;
+  background: #f8fafc;
+}
+
+.places-row strong {
+  display: block;
+  color: #0f172a;
+  font-size: 15px;
+}
+
+.places-row span {
+  display: block;
+  margin-top: 4px;
+  color: #64748b;
+  font-size: 13px;
+}
+
+.places-row button {
+  background: #e2e8f0;
+  color: #0f172a;
+}
+
+.places-row button:hover {
+  background: #cbd5e1;
+}
+
+.places-empty {
+  margin-top: 18px;
+  padding: 18px;
+  border: 1px dashed #cbd5e1;
+  border-radius: 18px;
+  color: #64748b;
+  text-align: center;
+}
+
+@media (max-width: 720px) {
+  .places-form {
+    flex-direction: column;
+  }
+
+  .places-form button {
+    width: 100%;
+  }
+
+  .places-row {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .places-row button {
+    width: 100%;
+  }
+}

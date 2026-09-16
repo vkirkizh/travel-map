@@ -1,0 +1,132 @@
+.dashboard-page {
+  display: grid;
+  min-height: 100vh;
+  place-items: center;
+  padding: 24px;
+  background:
+    radial-gradient(circle at top left, rgb(59 130 246 / 18%), transparent 34%),
+    radial-gradient(circle at bottom right, rgb(16 185 129 / 16%), transparent 30%),
+    #f8fafc;
+}
+
+.dashboard-card {
+  width: min(100%, 560px);
+  padding: 40px;
+  border: 1px solid rgb(226 232 240);
+  border-radius: 32px;
+  background: rgb(255 255 255 / 90%);
+  box-shadow: 0 24px 80px rgb(15 23 42 / 12%);
+  backdrop-filter: blur(14px);
+}
+
+.dashboard-eyebrow {
+  margin-bottom: 16px;
+  color: #2563eb;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.dashboard-card h1 {
+  margin: 0 0 24px;
+  color: #0f172a;
+  font-size: 40px;
+  line-height: 1;
+  letter-spacing: -0.04em;
+}
+
+.dashboard-card p {
+  margin: 0;
+  color: #475569;
+  font-size: 16px;
+  line-height: 1.6;
+}
+
+.dashboard-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 28px;
+  font-size: 14px;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.dashboard-public-link,
+.dashboard-settings-link,
+.dashboard-logout-button {
+  box-sizing: border-box;
+  display: inline-flex;
+  min-height: 41px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  font: inherit;
+  text-decoration: none;
+}
+
+.dashboard-public-link {
+  padding: 12px 18px;
+  background: #0f172a;
+  color: white;
+}
+
+.dashboard-public-link:hover {
+  background: #1e293b;
+}
+
+.dashboard-settings-link {
+  padding: 12px 20px;
+  background: #e2e8f0;
+  color: #0f172a;
+}
+
+.dashboard-settings-link:hover,
+.dashboard-logout-button:hover {
+  background: #cbd5e1;
+}
+
+.dashboard-logout-button {
+  border: 0;
+  padding: 12px 18px;
+  background: #e2e8f0;
+  color: #0f172a;
+  cursor: pointer;
+}
+
+.dashboard-error {
+  margin-top: 16px;
+  border-radius: 14px;
+  padding: 12px 14px;
+  background: #fee2e2;
+  color: #991b1b;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+@media (max-width: 720px) {
+  .dashboard-page {
+    padding: 16px;
+  }
+
+  .dashboard-card {
+    padding: 28px 22px;
+    border-radius: 24px;
+  }
+
+  .dashboard-card h1 {
+    font-size: 32px;
+  }
+
+  .dashboard-actions {
+    flex-direction: column;
+  }
+
+  .dashboard-public-link,
+  .dashboard-settings-link,
+  .dashboard-logout-button {
+    width: auto;
+    justify-content: center;
+    margin-bottom: 5px;
+  }
+}

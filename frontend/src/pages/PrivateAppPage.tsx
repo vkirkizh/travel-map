@@ -3,6 +3,7 @@ import {AuthScreen} from "../components/AuthScreen";
 import {Dashboard} from "../components/Dashboard";
 import {ProfileSettings} from "../components/ProfileSettings";
 import type {User} from "../types";
+import "./PrivateAppPage.css";
 
 type Props = {
   apiBaseUrl: string;
@@ -54,11 +55,15 @@ export function PrivateAppPage({apiBaseUrl, pathname}: Props) {
   }, [apiBaseUrl, pathname]);
 
   if (isLoading) {
-    return <div className="loading">Loading Travel Map App...</div>;
+    return <div className="private-app-status">Loading Travel Map App...</div>;
   }
 
   if (loadError) {
-    return <div className="error">{loadError}</div>;
+    return (
+      <div className="private-app-status private-app-status-error">
+        {loadError}
+      </div>
+    );
   }
 
   if (!user) {

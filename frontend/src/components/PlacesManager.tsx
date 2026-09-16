@@ -1,5 +1,6 @@
 import {useEffect, useState} from "react";
 import type {PrivatePlace} from "../types";
+import "./PlacesManager.css";
 
 type Props = {
   apiBaseUrl: string;
@@ -125,14 +126,14 @@ export function PlacesManager({apiBaseUrl, onUnauthorized}: Props) {
 
   return (
     <section className="places-section">
-      <div className="section-header">
+      <div className="places-header">
         <div>
           <h2>Visited places</h2>
           <p>Add cities or landmarks to your public travel map.</p>
         </div>
       </div>
 
-      <form className="place-form" onSubmit={addPlace}>
+      <form className="places-form" onSubmit={addPlace}>
         <input
           value={query}
           onChange={(event) => setQuery(event.target.value)}
@@ -144,16 +145,16 @@ export function PlacesManager({apiBaseUrl, onUnauthorized}: Props) {
         </button>
       </form>
 
-      {error && <div className="form-error">{error}</div>}
+      {error && <div className="places-error">{error}</div>}
 
       {isLoading ? (
-        <div className="empty-state">Loading places...</div>
+        <div className="places-empty">Loading places...</div>
       ) : places.length === 0 ? (
-        <div className="empty-state">Add your first visited place to see it on your public map.</div>
+        <div className="places-empty">Add your first visited place to see it on your public map.</div>
       ) : (
         <div className="places-list">
           {places.map((place) => (
-            <div className="place-row" key={place.id}>
+            <div className="places-row" key={place.id}>
               <div>
                 <strong>{place.title}</strong>
                 <span>

@@ -1,6 +1,7 @@
 import {useState} from "react";
 import type {User} from "../types";
 import {PlacesManager} from "./PlacesManager";
+import "./Dashboard.css";
 
 type Props = {
   apiBaseUrl: string;
@@ -33,10 +34,10 @@ export function Dashboard({apiBaseUrl, user, onLogout, onUnauthorized}: Props) {
   }
 
   return (
-    <div className="app-page">
+    <div className="dashboard-page">
       <div className="dashboard-card">
         <div>
-          <div className="landing-eyebrow">Travel Map</div>
+          <div className="dashboard-eyebrow">Travel Map</div>
           <h1>Hello, {user.display_name}</h1>
           <p>
             Manage your profile and visited places.
@@ -44,18 +45,18 @@ export function Dashboard({apiBaseUrl, user, onLogout, onUnauthorized}: Props) {
         </div>
 
         <div className="dashboard-actions">
-          <a className="landing-link" href={`/${user.username}/`} target="_blank">
+          <a className="dashboard-public-link" href={`/${user.username}/`} target="_blank">
             View public map
           </a>
-          <a className="ghost-link" href="/app/settings/">
+          <a className="dashboard-settings-link" href="/app/settings/">
             Settings
           </a>
-          <button className="ghost-button" type="button" onClick={logout}>
+          <button className="dashboard-logout-button" type="button" onClick={logout}>
             Logout
           </button>
         </div>
 
-        {logoutError && <div className="form-error">{logoutError}</div>}
+        {logoutError && <div className="dashboard-error">{logoutError}</div>}
 
         <PlacesManager
           apiBaseUrl={apiBaseUrl}

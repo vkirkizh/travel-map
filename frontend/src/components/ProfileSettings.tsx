@@ -1,5 +1,6 @@
 import {useState} from "react";
 import type {User} from "../types";
+import "./ProfileSettings.css";
 
 type Props = {
   apiBaseUrl: string;
@@ -79,11 +80,11 @@ export function ProfileSettings({
   }
 
   return (
-    <div className="app-page">
+    <div className="settings-page">
       <form className="settings-card" onSubmit={save}>
         <div className="settings-header">
           <div>
-            <div className="landing-eyebrow">Settings</div>
+            <div className="settings-eyebrow">Settings</div>
             <h1>Profile settings</h1>
             <p>Update your public profile and account details.</p>
           </div>
@@ -128,15 +129,15 @@ export function ProfileSettings({
           />
         </label>
 
-        {error && <div className="form-error">{error}</div>}
-        {success && <div className="form-success">{success}</div>}
+        {error && <div className="settings-error">{error}</div>}
+        {success && <div className="settings-success">{success}</div>}
 
-        <div className="dashboard-actions">
-          <button className="primary-button" type="submit" disabled={isSubmitting}>
+        <div className="settings-actions">
+          <button className="settings-submit" type="submit" disabled={isSubmitting}>
             {isSubmitting ? "Saving..." : "Save changes"}
           </button>
 
-          <a className="ghost-link" href="/app/">
+          <a className="settings-back-link" href="/app/">
             Back
           </a>
         </div>
