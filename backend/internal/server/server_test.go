@@ -10,40 +10,150 @@ import (
 	"github.com/vkirkizh/travel-map/backend/internal/auth"
 )
 
-func TestPasswordValidationPreservesWhitespace(t *testing.T) {
-	spaces := "      "
-
-	registerErrors := validateRegisterRequest(registerRequest{
-		Username:    "traveler",
-		Email:       "user@example.com",
-		Password:    spaces,
-		DisplayName: "Traveler",
-	})
-	if _, ok := registerErrors["password"]; ok {
-		t.Errorf("register rejected a six-character whitespace password: %v", registerErrors)
+func TestPlaceQueryLengthValidation(t *testing.T) {
+	tests := []struct {
+		name    string
+		query   string
+		wantErr bool
+	}{
+		{name: "below minimum", query: "ab", wantErr: true},
+		{name: "exact minimum", query: "abc", wantErr: false},
+		{name: "exact maximum", query: strings.Repeat("a", 200), wantErr: false},
+		{name: "above maximum", query: strings.Repeat("a", 201), wantErr: true},
+		{name: "unicode counts as characters", query: strings.Repeat("界", 200), wantErr: false},
+		{name: "trims before counting", query: " \tabc\n ", wantErr: false},
 	}
 
-	loginErrors := validateLoginRequest(loginRequest{
-		Email:    "user@example.com",
-		Password: " ",
-	})
-	if _, ok := loginErrors["password"]; ok {
-		t.Errorf("login rejected a non-empty whitespace password: %v", loginErrors)
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			errs := validateCreatePlaceRequest(createPlaceRequest{Query: test.query})
+			_, gotErr := errs["query"]
+			if gotErr != test.wantErr {
+				t.Errorf("query error present = %t, want %t; errors: %v", gotErr, test.wantErr, errs)
+			}
+		})
+	}
+}
+
+func TestDisplayNameLengthValidation(t *testing.T) {
+	tests := []struct {
+		name        string
+		displayName string
+		wantErr     bool
+	}{
+		{name: "below minimum", displayName: "a", wantErr: true},
+		{name: "exact minimum", displayName: "ab", wantErr: false},
+		{name: "exact maximum", displayName: strings.Repeat("a", 50), wantErr: false},
+		{name: "above maximum", displayName: strings.Repeat("a", 51), wantErr: true},
+		{name: "unicode counts as characters", displayName: strings.Repeat("界", 50), wantErr: false},
+		{name: "trims before counting", displayName: " \tab\n ", wantErr: false},
 	}
 
-	currentPassword := " current password "
-	updateErrors := validateUpdateMeRequest(updateMeRequest{
-		DisplayName:     "Traveler",
-		Email:           "user@example.com",
-		CurrentPassword: &currentPassword,
-		NewPassword:     &spaces,
-	})
-	if _, ok := updateErrors["new_password"]; ok {
-		t.Errorf("profile update rejected a six-character whitespace password: %v", updateErrors)
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			registerErrors := validateRegisterRequest(registerRequest{
+				Username:    "traveler",
+				Email:       "user@example.com",
+				Password:    "secret",
+				DisplayName: test.displayName,
+			})
+			_, registerErr := registerErrors["display_name"]
+
+			updateErrors := validateUpdateMeRequest(updateMeRequest{
+				DisplayName: test.displayName,
+				Email:       "user@example.com",
+			})
+			_, updateErr := updateErrors["display_name"]
+
+			if registerErr != test.wantErr || updateErr != test.wantErr {
+				t.Errorf(
+					"display name errors: register = %t, update = %t, want %t",
+					registerErr,
+					updateErr,
+					test.wantErr,
+				)
+			}
+		})
+	}
+}
+
+func TestNewPasswordLengthValidation(t *testing.T) {
+	tests := []struct {
+		name     string
+		password string
+		wantErr  bool
+	}{
+		{name: "below minimum", password: "12345", wantErr: true},
+		{name: "exact minimum", password: "123456", wantErr: false},
+		{name: "exact maximum", password: strings.Repeat("a", 64), wantErr: false},
+		{name: "above maximum", password: strings.Repeat("a", 65), wantErr: true},
+		{name: "six bytes across three unicode characters", password: "ééé", wantErr: false},
+		{name: "whitespace is preserved", password: "      ", wantErr: false},
 	}
 
-	if got := optionalPassword(&currentPassword); got == nil || *got != currentPassword {
-		t.Errorf("optionalPassword() = %v, want exact value %q", got, currentPassword)
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			registerErrors := validateRegisterRequest(registerRequest{
+				Username:    "traveler",
+				Email:       "user@example.com",
+				Password:    test.password,
+				DisplayName: "Traveler",
+			})
+			_, registerErr := registerErrors["password"]
+
+			currentPassword := " current password "
+			newPassword := test.password
+			updateErrors := validateUpdateMeRequest(updateMeRequest{
+				DisplayName:     "Traveler",
+				Email:           "user@example.com",
+				CurrentPassword: &currentPassword,
+				NewPassword:     &newPassword,
+			})
+			_, updateErr := updateErrors["new_password"]
+
+			if registerErr != test.wantErr || updateErr != test.wantErr {
+				t.Errorf(
+					"password errors: register = %t, update = %t, want %t",
+					registerErr,
+					updateErr,
+					test.wantErr,
+				)
+			}
+		})
+	}
+}
+
+func TestLoginPasswordValidationRemainsNonEmptyOnly(t *testing.T) {
+	tests := []struct {
+		name     string
+		password string
+		wantErr  bool
+	}{
+		{name: "empty", password: "", wantErr: true},
+		{name: "one byte", password: "x", wantErr: false},
+		{name: "whitespace", password: " ", wantErr: false},
+		{name: "above creation maximum", password: strings.Repeat("a", 65), wantErr: false},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			errs := validateLoginRequest(loginRequest{
+				Email:    "user@example.com",
+				Password: test.password,
+			})
+			_, gotErr := errs["password"]
+			if gotErr != test.wantErr {
+				t.Errorf("password error present = %t, want %t; errors: %v", gotErr, test.wantErr, errs)
+			}
+		})
+	}
+}
+
+func TestOptionalPasswordPreservesExactValue(t *testing.T) {
+	password := " current password "
+
+	if got := optionalPassword(&password); got == nil || *got != password {
+		t.Errorf("optionalPassword() = %v, want exact value %q", got, password)
 	}
 }
 

@@ -3,6 +3,7 @@ package server
 import (
 	"crypto/subtle"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/vkirkizh/travel-map/backend/internal/auth"
 )
@@ -36,8 +37,6 @@ func validateRegisterRequest(request registerRequest) map[string]string {
 
 	username := auth.NormalizeUsername(request.Username)
 	email := auth.NormalizeEmail(request.Email)
-	password := request.Password
-	displayName := strings.TrimSpace(request.DisplayName)
 
 	if username == "" {
 		errs["username"] = "Username is required."
@@ -51,16 +50,12 @@ func validateRegisterRequest(request registerRequest) map[string]string {
 		errs["email"] = "Email is invalid."
 	}
 
-	if password == "" {
-		errs["password"] = "Password is required."
-	} else if len(password) < 6 {
-		errs["password"] = "Password must be at least 6 characters."
+	if message := validateNewPassword(request.Password); message != "" {
+		errs["password"] = message
 	}
 
-	if displayName == "" {
-		errs["display_name"] = "Display name is required."
-	} else if len(displayName) > 80 {
-		errs["display_name"] = "Display name must be at most 80 characters."
+	if message := validateDisplayName(request.DisplayName); message != "" {
+		errs["display_name"] = message
 	}
 
 	return errs
@@ -101,10 +96,8 @@ func validateUpdateMeRequest(request updateMeRequest) map[string]string {
 
 	email := auth.NormalizeEmail(request.Email)
 
-	if request.DisplayName == "" {
-		errs["display_name"] = "Display name is required."
-	} else if len(request.DisplayName) > 80 {
-		errs["display_name"] = "Display name must be at most 80 characters."
+	if message := validateDisplayName(request.DisplayName); message != "" {
+		errs["display_name"] = message
 	}
 
 	if email == "" {
@@ -117,8 +110,8 @@ func validateUpdateMeRequest(request updateMeRequest) map[string]string {
 	currentPassword := optionalPassword(request.CurrentPassword)
 
 	if newPassword != nil {
-		if len(*newPassword) < 6 {
-			errs["new_password"] = "New password must be at least 6 characters."
+		if message := validateNewPassword(*newPassword); message != "" {
+			errs["new_password"] = message
 		}
 
 		if currentPassword == nil {
@@ -127,4 +120,41 @@ func validateUpdateMeRequest(request updateMeRequest) map[string]string {
 	}
 
 	return errs
+}
+
+func validateCreatePlaceRequest(request createPlaceRequest) map[string]string {
+	errs := make(map[string]string)
+	queryLength := utf8.RuneCountInString(strings.TrimSpace(request.Query))
+
+	if queryLength < 3 {
+		errs["query"] = "Place query must be at least 3 characters."
+	} else if queryLength > 200 {
+		errs["query"] = "Place query must be at most 200 characters."
+	}
+
+	return errs
+}
+
+func validateDisplayName(displayName string) string {
+	length := utf8.RuneCountInString(strings.TrimSpace(displayName))
+
+	if length < 2 {
+		return "Display name must be at least 2 characters."
+	}
+	if length > 50 {
+		return "Display name must be at most 50 characters."
+	}
+
+	return ""
+}
+
+func validateNewPassword(password string) string {
+	if len(password) < 6 {
+		return "Password must be at least 6 bytes."
+	}
+	if len(password) > 64 {
+		return "Password must be at most 64 bytes."
+	}
+
+	return ""
 }

@@ -42,12 +42,11 @@ func (s *Server) createPlace(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	request.Query = strings.TrimSpace(request.Query)
-	if request.Query == "" {
+	validationErrors := validateCreatePlaceRequest(request)
+	if len(validationErrors) > 0 {
 		writeJSON(w, http.StatusBadRequest, map[string]any{
-			"error": "validation failed",
-			"fields": map[string]string{
-				"query": "Place query is required.",
-			},
+			"error":  "validation failed",
+			"fields": validationErrors,
 		})
 		return
 	}

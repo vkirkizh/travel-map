@@ -36,7 +36,7 @@ func NewService(db *pgxpool.Pool) *Service {
 		baseURL:   nominatimBaseURL,
 		userAgent: nominatimUserAgent,
 		client: &http.Client{
-			Timeout: 8 * time.Second,
+			Timeout: 10 * time.Second,
 		},
 	}
 }

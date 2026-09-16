@@ -7,12 +7,21 @@ import (
 	"net/http"
 	"strings"
 	"testing"
+	"time"
 )
 
 type roundTripFunc func(*http.Request) (*http.Response, error)
 
 func (fn roundTripFunc) RoundTrip(request *http.Request) (*http.Response, error) {
 	return fn(request)
+}
+
+func TestNewServiceConfiguresNominatimTimeout(t *testing.T) {
+	service := NewService(nil)
+
+	if service.client.Timeout != 10*time.Second {
+		t.Errorf("client timeout = %s, want %s", service.client.Timeout, 10*time.Second)
+	}
 }
 
 func TestParseNominatimResponseValidResult(t *testing.T) {
