@@ -109,6 +109,10 @@ export function AuthScreen({ apiBaseUrl, onAuthenticated }: Props) {
               <input value={username} onChange={(e) => setUsername(e.target.value)} />
             </label>
 
+            <div className="hint">
+              4–20 characters. Start with a letter. Use letters, numbers and single underscores only.
+            </div>
+
             <label>
               Display name
               <input

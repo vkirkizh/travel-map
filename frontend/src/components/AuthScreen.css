@@ -87,6 +87,12 @@
   box-shadow: 0 0 0 4px rgb(37 99 235 / 12%);
 }
 
+.auth-card .hint {
+  margin-top: 4px;
+  color: #6b7280;
+  font-size: 12px;
+}
+
 .auth-error {
   margin-top: 16px;
   border-radius: 14px;

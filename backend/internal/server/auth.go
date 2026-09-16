@@ -20,7 +20,7 @@ func (s *Server) register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	request.Username = strings.TrimSpace(request.Username)
+	request.Username = auth.NormalizeUsername(request.Username)
 	request.Email = auth.NormalizeEmail(request.Email)
 	request.DisplayName = strings.TrimSpace(request.DisplayName)
 

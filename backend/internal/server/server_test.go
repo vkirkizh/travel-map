@@ -47,6 +47,33 @@ func TestPasswordValidationPreservesWhitespace(t *testing.T) {
 	}
 }
 
+func TestRegisterUsernameValidation(t *testing.T) {
+	tests := []struct {
+		name     string
+		username string
+		wantErr  bool
+	}{
+		{name: "normalizes uppercase and whitespace", username: " Valery_Kirkizh ", wantErr: false},
+		{name: "rejects invalid username", username: "valery__kirkizh", wantErr: true},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			errs := validateRegisterRequest(registerRequest{
+				Username:    test.username,
+				Email:       "user@example.com",
+				Password:    "secret",
+				DisplayName: "Traveler",
+			})
+
+			_, gotErr := errs["username"]
+			if gotErr != test.wantErr {
+				t.Errorf("username error present = %t, want %t; errors: %v", gotErr, test.wantErr, errs)
+			}
+		})
+	}
+}
+
 func TestWriteCurrentUserError(t *testing.T) {
 	tests := []struct {
 		name       string

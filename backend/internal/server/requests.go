@@ -32,17 +32,15 @@ type updateMeRequest struct {
 func validateRegisterRequest(request registerRequest) map[string]string {
 	errs := make(map[string]string)
 
-	username := strings.TrimSpace(request.Username)
+	username := auth.NormalizeUsername(request.Username)
 	email := auth.NormalizeEmail(request.Email)
 	password := request.Password
 	displayName := strings.TrimSpace(request.DisplayName)
 
 	if username == "" {
 		errs["username"] = "Username is required."
-	} else if len(username) < 3 {
-		errs["username"] = "Username must be at least 3 characters."
-	} else if len(username) > 32 {
-		errs["username"] = "Username must be at most 32 characters."
+	} else if !auth.IsValidUsername(username) {
+		errs["username"] = "Username is invalid."
 	}
 
 	if email == "" {
