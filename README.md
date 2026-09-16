@@ -1,58 +1,64 @@
 # Travel Map
 
-A personal travel map for sharing visited places and travel statistics.
+A personal travel map for visualizing visited places.
 
-## Stack
+**Live demo:** https://map.kirkizh.com/valery/
 
-- Go
-- PostgreSQL
-- React
-- TypeScript
-- Leaflet
-- Docker Compose
+![Travel Map](docs/screenshots/travel-map-screenshot.png)
 
 ## Features
 
-Current MVP:
-- Public user travel map
-- Visited places on OpenStreetMap
-- Travel statistics
-- Cookie-based authentication
-- Private dashboard
-- Places CRUD
-- Nominatim geocoding with PostgreSQL cache
-- Gravatar-based profile avatars
-- Profile settings
-- Email and password updates
+-   Public travel maps with visited places and statistics
+-   User registration and cookie-based authentication
+-   Private dashboard and profile settings
+-   Places management with Nominatim geocoding
+-   PostgreSQL-backed geocoding cache
+-   Automatic country detection from geocoding results
+-   Gravatar-based profile avatars
+
+## Architecture
+
+Travel Map is a small full-stack web application with a Go backend, React frontend and PostgreSQL database.
+
+The backend is structured as a modular monolith with explicit domain boundaries.
+It exposes an HTTP API for authentication, profile management, places and public maps.
+External geocoding is handled through Nominatim and cached locally to reduce repeated requests.
+
+The production deployment runs with Docker Compose behind Caddy,
+which serves the frontend, reverse-proxies API requests and manages HTTPS.
+
+## Stack
+
+**Backend:** Go, PostgreSQL\
+**Frontend:** React, TypeScript, Leaflet\
+**Infrastructure:** Docker, Docker Compose, Caddy, DigitalOcean,
+Cloudflare\
+**External services:** Nominatim, CARTO, Gravatar
 
 ## Local development
 
-Start database:
+Start PostgreSQL:
+
 ```bash
 make dev-env
 ```
 
-Run migrations:
+Run migrations and seed development data:
+
 ```bash
 make migrate-up
-```
-
-Seed demo data:
-```bash
 make seed-dev
 ```
 
-Run backend:
+Run the backend and frontend:
+
 ```bash
 make backend-run
-```
-
-Run frontend:
-```bash
 make frontend-run
 ```
 
-Open:
+The application will be available at:
+
 ```text
 http://localhost:5173/
 http://localhost:5173/valery/
@@ -60,30 +66,20 @@ http://localhost:5173/app/
 ```
 
 Test user:
+
 ```text
 Login: valery@kirkizh.com
 Password: 123456
 ```
 
-Health checks:
-```bash
-curl http://localhost:8080/healthz
-curl http://localhost:8080/readyz
-```
+Run all development checks:
 
-Development checks:
 ```bash
 make check
 ```
-
-## Geocoding
-
-Travel Map uses Nominatim for geocoding during MVP development.
-The backend caches geocoding results in PostgreSQL to avoid repeated external API calls for the same normalized query.
-Countries are added or updated automatically from successful geocoding results before places are stored.
 
 ## Author
 
 Valery Kirkizh
 
-[valery@kirkizh.com](mailto:valery@kirkizh.com)
+<valery@kirkizh.com>

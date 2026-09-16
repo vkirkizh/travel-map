@@ -1,4 +1,4 @@
-# ADR 005: Gravatar Avatars
+# ADR 004: Gravatar Avatars
 
 ## Context
 
