@@ -1,4 +1,4 @@
-.PHONY: up down logs dev-env migrate-up migrate-down seed-dev backend-run backend-test backend-lint frontend-run docker-build restart import-countries
+.PHONY: up down logs dev-env migrate-up migrate-down seed-dev backend-run backend-test backend-lint frontend-run docker-build restart
 
 up:
 	docker compose up -d
@@ -39,6 +39,3 @@ docker-build:
 restart:
 	docker compose down
 	docker compose up -d --build
-
-import-countries:
-	cd backend && go run ./cmd/import-countries -file ../data/countries.csv

@@ -35,12 +35,17 @@ func (s *Service) getFromCache(ctx context.Context, normalized string) (*Result,
 	}
 
 	var cached nominatimResponseItem
-	if err := json.Unmarshal(result.RawJSON, &cached); err == nil {
-		result.Title = cached.DisplayName
-		result.CountryName = cached.Address.Country
+	if err := json.Unmarshal(result.RawJSON, &cached); err != nil {
+		return nil, err
 	}
 
-	return &result, nil
+	normalizedResult, err := normalizeNominatimItem(cached, result.Query)
+	if err != nil {
+		return nil, err
+	}
+	normalizedResult.RawJSON = result.RawJSON
+
+	return normalizedResult, nil
 }
 
 func (s *Service) saveToCache(ctx context.Context, normalized string, result *Result) error {

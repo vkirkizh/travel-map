@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"io"
+	"math"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -48,7 +50,7 @@ func (s *Service) Resolve(ctx context.Context, query string) (*Result, error) {
 		return nil, err
 	}
 
-	result, err := s.resolveViaNominatim(ctx, query, normalized)
+	result, err := s.resolveViaNominatim(ctx, query)
 	if err != nil {
 		return nil, err
 	}
@@ -65,26 +67,30 @@ func normalizeQuery(query string) string {
 }
 
 type nominatimResponseItem struct {
-	DisplayName string `json:"display_name"`
-	Lat         string `json:"lat"`
-	Lon         string `json:"lon"`
+	Name        string            `json:"name"`
+	NameDetails map[string]string `json:"namedetails"`
+	Lat         string            `json:"lat"`
+	Lon         string            `json:"lon"`
 	Address     struct {
-		Country     string `json:"country"`
-		CountryCode string `json:"country_code"`
+		Country       string `json:"country"`
+		CountryCode   string `json:"country_code"`
+		ISO3166Level3 string `json:"ISO3166-2-lvl3"`
 	} `json:"address"`
 }
 
-func (s *Service) resolveViaNominatim(ctx context.Context, originalQuery string, normalized string) (*Result, error) {
+func (s *Service) resolveViaNominatim(ctx context.Context, originalQuery string) (*Result, error) {
 	endpoint, err := url.Parse(s.baseURL + "/search")
 	if err != nil {
 		return nil, err
 	}
 
 	params := endpoint.Query()
-	params.Set("q", normalized)
+	params.Set("q", originalQuery)
 	params.Set("format", "jsonv2")
 	params.Set("addressdetails", "1")
-	params.Set("limit", "1")
+	params.Set("namedetails", "1")
+	params.Set("accept-language", "en")
+	params.Set("limit", "5")
 	endpoint.RawQuery = params.Encode()
 
 	request, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint.String(), nil)
@@ -111,25 +117,75 @@ func (s *Service) resolveViaNominatim(ctx context.Context, originalQuery string,
 		return nil, errors.New("nominatim request failed")
 	}
 
+	return parseNominatimResponse(response.Body, originalQuery)
+}
+
+func parseNominatimResponse(reader io.Reader, query string) (*Result, error) {
 	var items []nominatimResponseItem
-	if err := json.NewDecoder(response.Body).Decode(&items); err != nil {
+	if err := json.NewDecoder(reader).Decode(&items); err != nil {
 		return nil, err
 	}
 
-	if len(items) == 0 {
+	for _, item := range items {
+		result, err := normalizeNominatimItem(item, query)
+		if err == nil {
+			return result, nil
+		}
+		if !errors.Is(err, ErrNotFound) {
+			return nil, err
+		}
+	}
+
+	return nil, ErrNotFound
+}
+
+func normalizeNominatimItem(item nominatimResponseItem, query string) (*Result, error) {
+	placeName := ""
+	for _, candidate := range []string{
+		item.NameDetails["_place_name:en"],
+		item.NameDetails["name:en"],
+		item.Name,
+	} {
+		if candidate = strings.TrimSpace(candidate); candidate != "" {
+			placeName = candidate
+			break
+		}
+	}
+
+	countryName := strings.TrimSpace(item.Address.Country)
+	countryCode := strings.ToUpper(strings.TrimSpace(item.Address.CountryCode))
+	switch countryName {
+	case "Abkhazia":
+		countryCode = "AB"
+		countryName = "Abkhazia"
+	case "South Ossetia":
+		countryCode = "OS"
+		countryName = "South Ossetia"
+	case "Northern Cyprus":
+		countryCode = "NC"
+		countryName = "Northern Cyprus"
+	default:
+		switch strings.TrimSpace(item.Address.ISO3166Level3) {
+		case "CN-HK":
+			countryCode = "HK"
+			countryName = "Hong Kong"
+		case "CN-MO":
+			countryCode = "MO"
+			countryName = "Macau"
+		}
+	}
+	if placeName == "" || countryName == "" || countryCode == "" {
 		return nil, ErrNotFound
 	}
 
-	item := items[0]
-
-	lat, err := strconv.ParseFloat(item.Lat, 64)
-	if err != nil {
-		return nil, err
+	lat, err := strconv.ParseFloat(strings.TrimSpace(item.Lat), 64)
+	if err != nil || math.IsNaN(lat) || math.IsInf(lat, 0) || lat < -90 || lat > 90 {
+		return nil, ErrNotFound
 	}
 
-	lng, err := strconv.ParseFloat(item.Lon, 64)
-	if err != nil {
-		return nil, err
+	lng, err := strconv.ParseFloat(strings.TrimSpace(item.Lon), 64)
+	if err != nil || math.IsNaN(lng) || math.IsInf(lng, 0) || lng < -180 || lng > 180 {
+		return nil, ErrNotFound
 	}
 
 	rawJSON, err := json.Marshal(item)
@@ -137,16 +193,11 @@ func (s *Service) resolveViaNominatim(ctx context.Context, originalQuery string,
 		return nil, err
 	}
 
-	countryCode := strings.ToUpper(item.Address.CountryCode)
-	if countryCode == "" {
-		return nil, ErrNotFound
-	}
-
 	return &Result{
-		Title:       item.DisplayName,
-		Query:       originalQuery,
+		Title:       placeName + ", " + countryName,
+		Query:       query,
 		CountryCode: countryCode,
-		CountryName: item.Address.Country,
+		CountryName: countryName,
 		Lat:         lat,
 		Lng:         lng,
 		RawJSON:     rawJSON,

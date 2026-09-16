@@ -7,11 +7,7 @@ INSERT INTO countries (code, name)
 VALUES
   ('DE', 'Germany'),
   ('HR', 'Croatia'),
-  ('GB', 'United Kingdom'),
-  ('AT', 'Austria'),
-  ('CZ', 'Czech Republic'),
-  ('FR', 'France'),
-  ('IT', 'Italy')
+  ('GB', 'United Kingdom')
   ON CONFLICT (code) DO UPDATE SET
   name = EXCLUDED.name;
 

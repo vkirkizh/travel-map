@@ -87,18 +87,7 @@ Relevant tables:
 - `countries`
 - `places`
 
-## Reference data
-
-Travel Map uses the [OurAirports `countries.csv` dataset](https://ourairports.com/data/) as country reference data.
-Download [`countries.csv`](https://davidmegginson.github.io/ourairports-data/countries.csv) into the local `data` directory:
-```text
-data/countries.csv
-```
-
-Import reference data:
-```bash
-make import-countries
-```
+Countries are added or updated automatically from successful geocoding results before places are stored.
 
 ## Author
 
