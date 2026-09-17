@@ -67,11 +67,11 @@ export function PublicMapPage({apiBaseUrl, username}: Props) {
         attributionControl={false}
       >
         <AttributionControl
-          prefix='<a href="https://github.com/vkirkizh/travel-map" target="_blank">Travel Map</a> | <a href="https://leafletjs.com" target="_blank" rel="nofollow">Leaflet</a>'
+          prefix='<a href="https://map.kirkizh.com/">Travel Map</a> | <a href="https://github.com/vkirkizh/travel-map" target="_blank" rel="noopener">GitHub Project</a>'
         />
 
         <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="nofollow">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions" target="_blank" rel="nofollow">CARTO</a>'
+          attribution='<a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener nofollow">OpenStreetMap</a> | <a href="https://carto.com/attributions" target="_blank" rel="noopener nofollow">CARTO</a>'
           url={`https://basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png?key=${encodeURIComponent(cartoApiKey)}`}
         />
 
@@ -79,7 +79,7 @@ export function PublicMapPage({apiBaseUrl, username}: Props) {
           <CircleMarker
             key={place.id}
             center={[place.lat, place.lng]}
-            radius={7}
+            radius={6}
             pathOptions={{
               opacity: 1,
               fillOpacity: 0.85,
