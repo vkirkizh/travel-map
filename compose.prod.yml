@@ -49,27 +49,35 @@ services:
       timeout: 3s
       retries: 5
       start_period: 5s
+    networks:
+      default:
+      edge:
+        aliases:
+          - travel-map-backend
+        gw_priority: -1
 
-  caddy:
+  frontend:
     build:
       context: ./frontend
-      dockerfile: Dockerfile.prod
       args:
         VITE_CARTO_API_KEY: ${VITE_CARTO_API_KEY:?VITE_CARTO_API_KEY is required}
     restart: unless-stopped
-    environment:
-      SITE_ADDRESS: ${SITE_ADDRESS:-map.kirkizh.com}
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - caddy_data:/data
-      - caddy_config:/config
-    depends_on:
-      backend:
-        condition: service_healthy
+    healthcheck:
+      test: [ "CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1/index.html" ]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
+    networks:
+      edge:
+        aliases:
+          - travel-map-frontend
+
+networks:
+  default:
+  edge:
+    external: true
+    name: edge
 
 volumes:
   postgres_data:
-  caddy_data:
-  caddy_config:

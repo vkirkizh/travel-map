@@ -7,15 +7,15 @@ RUN npm ci
 
 COPY . .
 
-ARG VITE_API_BASE_URL=http://localhost:8080
-ARG VITE_CARTO_API_KEY=
-ENV VITE_API_BASE_URL=${VITE_API_BASE_URL}
+ARG VITE_CARTO_API_KEY
+ENV VITE_API_BASE_URL=""
 ENV VITE_CARTO_API_KEY=${VITE_CARTO_API_KEY}
 
-RUN npm run build
+RUN test -n "${VITE_CARTO_API_KEY}" && npm run build
 
-FROM nginx:1.29-alpine
+FROM caddy:2.10.2-alpine
 
-COPY --from=builder /app/dist /usr/share/nginx/html
+COPY Caddyfile /etc/caddy/Caddyfile
+COPY --from=builder /app/dist /srv
 
 EXPOSE 80
