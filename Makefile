@@ -10,7 +10,7 @@ logs:
 	docker compose logs -f
 
 dev-env:
-	docker compose up -d postgres
+	docker compose up -d --wait postgres
 
 migrate-up:
 	migrate -path backend/migrations -database "postgres://travel_map:travel_map@localhost:5432/travel_map?sslmode=disable" up
